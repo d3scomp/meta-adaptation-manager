@@ -18,12 +18,15 @@ package cz.cuni.mff.d3s.metaadaptation.correlation;
 import java.util.HashMap;
 import java.util.Map;
 
+
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
 public class EnsembleFactoryHelper {
 
+	private boolean verbose;
+	
 	/**
 	 * Once a new class is created it is stored here ready for further retrieval.
 	 */
@@ -31,11 +34,19 @@ public class EnsembleFactoryHelper {
 	
 	private EnsembleFactory ensembleFactory;
 	
-	public EnsembleFactoryHelper(EnsembleFactory ensembleFactory){
-		if(ensembleFactory == null){
-			throw new NullPointerException(String.format("The %s argument is null.", "ensembleFactory"));
+	public EnsembleFactoryHelper(){
+	}
+	
+	public EnsembleFactoryHelper withVerbosity(boolean verbosity){
+		verbose = verbosity;
+		return this;
+	}
+	
+	public void setEnsembleFactory(EnsembleFactory factory){
+		if(factory == null){
+			throw new NullPointerException(String.format("The %s argument is null.", "factory"));
 		}
-		this.ensembleFactory = ensembleFactory;
+		this.ensembleFactory = factory;
 	}
 	
 	/**
@@ -46,19 +57,28 @@ public class EnsembleFactoryHelper {
 	 * 		In our example this refers to "position".
 	 * @param correlationSubject Name of the knowledge field used for the calculation of data correlation after
 	 * 		the values has been filtered. In our example this refers to "temperature".
-	 * @param enableLogging Specifies whether the generated ensemble will be logged in the runtime log.
 	 * @return A class that defines an ensemble for data exchange given by the specified knowledge fields.
 	 * @throws Exception If there is a problem creating the ensemble class.
 	 */
-	public Class<?> getEnsembleDefinition(String correlationFilter, String correlationSubject, boolean enableLogging) throws Exception {
+	public Class<?> getEnsembleDefinition(String correlationFilter, String correlationSubject) throws Exception {
 		String className = composeClassName(correlationFilter, correlationSubject);
 		Class<?> requestedClass;
 		if(!bufferedClasses.containsKey(className)){
-			requestedClass = ensembleFactory.createEnsembleDefinition(correlationFilter, correlationSubject, enableLogging);
+			requestedClass = ensembleFactory.createEnsembleDefinition(correlationFilter, correlationSubject);
+			
 			bufferedClasses.put(className, requestedClass);
+
+			if(verbose){
+				System.out.println(String.format("The %s ensemble created.", className));
+				System.out.println(String.format("The %s ensemble buffered.", className));
+			}
 		}
 		else {
 			requestedClass = bufferedClasses.get(className);
+			
+			if(verbose){
+				System.out.println(String.format("The %s ensemble fetched from buffer.", className));
+			}
 		}
 
 		return requestedClass;
@@ -83,5 +103,9 @@ public class EnsembleFactoryHelper {
 			bufferedClasses.remove(ensembleName);
 		}
 		bufferedClasses.put(ensembleName, ensembleDefinition);
+		
+		if(verbose){
+			System.out.println(String.format("The %s ensemble buffered.", ensembleName));
+		}
 	}
 }

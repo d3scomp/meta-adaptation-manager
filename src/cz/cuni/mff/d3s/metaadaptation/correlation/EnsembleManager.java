@@ -19,7 +19,7 @@ package cz.cuni.mff.d3s.metaadaptation.correlation;
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface Connectors {
+public interface EnsembleManager {
 	public void addEnsemble(Class<?> ensemble);
 	/*
 	 * for(DEECoNode node : connectors){

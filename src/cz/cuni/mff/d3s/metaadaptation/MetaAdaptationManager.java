@@ -18,6 +18,8 @@ package cz.cuni.mff.d3s.metaadaptation;
 import java.util.ArrayList;
 import java.util.List;
 
+import cz.cuni.mff.d3s.metaadaptation.correlation.CorrelationManager;
+
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
@@ -40,6 +42,9 @@ public class MetaAdaptationManager {
 	 */
 	public void reason() {
 		for(MAPEAdaptation adaptation : adaptations){
+			if(adaptation instanceof CorrelationManager){
+				((CorrelationManager)adaptation).printHistory();
+			}
 			adaptation.monitor();
 			boolean isApplicable = adaptation.analyze();
 			if(isApplicable){

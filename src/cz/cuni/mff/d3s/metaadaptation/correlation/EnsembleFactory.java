@@ -23,9 +23,11 @@ public interface EnsembleFactory {
 
 	@SuppressWarnings("rawtypes")
 	public Class createEnsembleDefinition(String correlationFilter,
-			String correlationSubject, boolean enableLogging) throws Exception;
+			String correlationSubject) throws Exception;
 	
 	@SuppressWarnings("rawtypes")
 	public Class setEnsembleMembershipBoundary(String correlationFilter,
-			String correlationSubject, double boundary, boolean enableLogging) throws Exception;
+			String correlationSubject, double boundary) throws Exception;
+	
+	public EnsembleFactoryHelper getHelper();
 }

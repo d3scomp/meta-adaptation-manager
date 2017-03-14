@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 
 import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
-import cz.cuni.mff.d3s.metaadaptation.Log;
 import cz.cuni.mff.d3s.metaadaptation.correlation.CorrelationLevel.DistanceClass;
 
 public class CorrelationManager implements MAPEAdaptation {
@@ -18,11 +17,9 @@ public class CorrelationManager implements MAPEAdaptation {
 	/**
 	 * Specify whether to print the values being processed by the correlation computation.
 	 */
-	static boolean dumpValues = false;
+	public static boolean dumpValues = false;
 
-	static boolean verbose = false;
-	
-	static boolean logGeneratedEnsembles = false;
+	public static boolean verbose = false;
 
 	/**
 	 * Time slot duration in milliseconds. Correlation of values is computed
@@ -38,11 +35,9 @@ public class CorrelationManager implements MAPEAdaptation {
 	/**
 	 * The connectors of the system.
 	 */
-	public final Connectors connectors;
+	public final EnsembleManager ensembleManager;
 	
 	public final EnsembleFactory ensembleFactory;
-	
-	public final EnsembleFactoryHelper ensembleFactoryHelper;
 	
 	/**
 	 * Caches the failures that has been already analyzed, to save time.
@@ -70,18 +65,24 @@ public class CorrelationManager implements MAPEAdaptation {
 
 	/**
 	 * Create an instance of the {@link CorrelationManager} that will hold
-	 * a reference to the given system {@link Connectors}.
-	 * @param connectors The system {@link Connectors}.
+	 * a reference to the given system {@link EnsembleManager}.
+	 * @param ensembleManager The system {@link EnsembleManager}.
 	 */
-	public CorrelationManager(List<Component> components, Connectors connectors, EnsembleFactory ensembleFactory) {
+	public CorrelationManager(EnsembleManager ensembleManager, EnsembleFactory ensembleFactory) {
 		knowledgeHistoryOfAllComponents = new HashMap<>();
 		analyzedFailureCache = new HashMap<>();
 		distanceBounds = new HashMap<>();
 
-		this.components = components;
-		this.connectors = connectors;
+		this.components = new ArrayList<>();
+		this.ensembleManager = ensembleManager;
 		this.ensembleFactory = ensembleFactory;
-		ensembleFactoryHelper = new EnsembleFactoryHelper(ensembleFactory);
+	}
+	
+	public void setComponents(Set<Component> components){
+		this.components.clear();
+		for(Component component : components){
+			this.components.add(component);
+		}
 	}
 
 
@@ -129,13 +130,13 @@ public class CorrelationManager implements MAPEAdaptation {
 					distanceBounds.get(labels).getBoundary()));
 		}
 
-		Log.getInstance().info(b.toString());
+		System.out.println(b.toString());
 	}
 
 	@Override
 	public void monitor() {
 		for(Component c : components){
-			Map<String, List<CorrelationMetadataWrapper<?>>> memberKnowledgeHistory = 
+			Map<String, List<CorrelationMetadataWrapper<?>>> memberKnowledgeHistory =
 				knowledgeHistoryOfAllComponents.get(c.getId());
 			if (memberKnowledgeHistory == null) {
 				memberKnowledgeHistory = new HashMap<>();
@@ -204,15 +205,15 @@ public class CorrelationManager implements MAPEAdaptation {
 	@Override
 	public void plan() {
 		if(verbose){
-			Log.getInstance().info("Correlation process started...");
+			System.out.println("Correlation process started...");
 		}
 
 		for(LabelPair labels : getAllLabelPairs(knowledgeHistoryOfAllComponents)){
 			List<DistancePair> distances = computeDistances(knowledgeHistoryOfAllComponents, labels);
 			double boundary = getDistanceBoundary(distances, labels);
 			if(verbose){
-				Log.getInstance().info(String.format("%s -> %s", labels.getFirstLabel(), labels.getSecondLabel()));
-				Log.getInstance().info(String.format("Boundary: %f", boundary));
+				System.out.println(String.format("%s -> %s", labels.getFirstLabel(), labels.getSecondLabel()));
+				System.out.println(String.format("Boundary: %f", boundary));
 			}
 			if(distanceBounds.containsKey(labels)){
 				// Update existing boundary (automatically handles "hasChanged" flag)
@@ -231,42 +232,42 @@ public class CorrelationManager implements MAPEAdaptation {
 	@Override
 	public void execute() {
 		if(verbose){
-			Log.getInstance().info("Correlation ensembles management process started...");
+			System.out.println("Correlation ensembles management process started...");
 		}
 
 		for(LabelPair labels : distanceBounds.keySet()){
 			String correlationFilter = labels.getFirstLabel();
 			String correlationSubject = labels.getSecondLabel();
 			BoundaryValueHolder distance = distanceBounds.get(labels);
-			String ensembleName = ensembleFactoryHelper
+			String ensembleName = ensembleFactory.getHelper()
 					.composeClassName(correlationFilter, correlationSubject);
 			try {
 				if (!distance.isValid()) {
 					if(verbose){
-						Log.getInstance().info(String.format("Undeploying ensemble %s",	ensembleName));
+						System.out.println(String.format("Undeploying ensemble %s",	ensembleName));
 					}
 					// Undeploy the ensemble if the meta-adaptation is stopped or the correlation between the data is not reliable
-					connectors.removeEnsemble(ensembleName);
+					ensembleManager.removeEnsemble(ensembleName);
 				} else if (distance.hasChanged()) {
 					// Re-deploy the ensemble only if the distance has changed since the last time and if it is valid
-					Class<?> ensemble = ensembleFactory.setEnsembleMembershipBoundary(correlationFilter, correlationSubject, distance.getBoundary(), logGeneratedEnsembles);
-					ensembleFactoryHelper.bufferEnsembleDefinition(ensembleName, ensemble);
+					Class<?> ensemble = ensembleFactory.setEnsembleMembershipBoundary(correlationFilter, correlationSubject, distance.getBoundary());
+					ensembleFactory.getHelper().bufferEnsembleDefinition(ensembleName, ensemble);
 					if(verbose){
-						Log.getInstance().info(String.format("Deploying ensemble %s", ensembleName));
+						System.out.println(String.format("Deploying ensemble %s", ensembleName));
 					}
 					// Deploy the ensemble if the correlation is reliable enough and the meta-adaptation is running
-					connectors.removeEnsemble(ensemble.getName());
+					ensembleManager.removeEnsemble(ensemble.getName());
 					// TODO: deploy only on broken nodes
-					connectors.addEnsemble(ensemble);
+					ensembleManager.addEnsemble(ensemble);
 					// Mark the boundary as !hasChanged since the new value is used
 					distanceBounds.get(labels).boundaryUsed();
 				} else if(verbose){
-					Log.getInstance().info(String.format(
+					System.out.println(String.format(
 							"Omitting deployment of ensemble %s since the bound hasn't changed (much).",
 							ensembleName));
 				}
 			} catch(Exception e) {
-				Log.getInstance().error(e.getMessage());
+				System.out.println(e.getMessage());
 				e.printStackTrace();
 			}
 		}
@@ -432,7 +433,7 @@ public class CorrelationManager implements MAPEAdaptation {
 		KnowledgeQuadruple values = getMinCommonTimeSlotValues(
 				c1Values1, c1Values2, c2Values1, c2Values2);
 		if(values == null){
-			Log.getInstance().debug(String.format("Correlation for [%s:%s]{%s -> %s} Skipped",
+			System.out.println(String.format("Correlation for [%s:%s]{%s -> %s} Skipped",
 					components.component1Id, components.component2Id,
 					labels.getFirstLabel(), labels.getSecondLabel()));
 		}
@@ -441,7 +442,7 @@ public class CorrelationManager implements MAPEAdaptation {
 			timeSlot = values.timeSlot;
 			knowledgeVectors.add(values);
 
-			Log.getInstance().debug(String.format("Correlation for [%s:%s]{%s -> %s}(%d)",
+			System.out.println(String.format("Correlation for [%s:%s]{%s -> %s}(%d)",
 					components.component1Id, components.component2Id,
 					labels.getFirstLabel(), labels.getSecondLabel(), timeSlot));
 
@@ -494,7 +495,7 @@ public class CorrelationManager implements MAPEAdaptation {
 			StringBuilder b = new StringBuilder();
 			b.append("Computed distances\n");
 			fillDistances(distancePairs, b);
-			Log.getInstance().info(b.toString());
+			System.out.println(b.toString());
 		}
 
 		return distancePairs;
@@ -518,7 +519,7 @@ public class CorrelationManager implements MAPEAdaptation {
 			StringBuilder b = new StringBuilder();
 			b.append("Sorted distances\n");
 			fillDistances(distancePairs, b);
-			Log.getInstance().info(b.toString());
+			System.out.println(b.toString());
 		}
 		// Count the correlation for all the distances based on all smaller distances than the computed one
 		List<Double> correlations = new ArrayList<>(Collections.nCopies(distancePairs.size(), Double.NaN));
