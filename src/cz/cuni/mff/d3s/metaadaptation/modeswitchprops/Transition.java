@@ -13,24 +13,17 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *******************************************************************************/
-package cz.cuni.mff.d3s.metaadaptation.modeswitch;
+package cz.cuni.mff.d3s.metaadaptation.modeswitchprops;
 
-import cz.cuni.mff.d3s.metaadaptation.search.StateSpaceSearch;
+import java.util.Map;
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface Component {
-
-	public String getId();
-	public ModeChart getModeChart();
-	public StateSpaceSearch getStateSpaceSearch();
-	
-	// Callbacks
-	public void nonDeterminismLevelChanged(double probability);
-	
-	public double getUtility();
-	
-	public abstract void restartUtility();
+public interface Transition {
+	public Mode getFrom();
+	public Mode GetTo();
+	public Map<String, Double> getGuardParams();
+	public void setGuardParam(String name, double value);
 }

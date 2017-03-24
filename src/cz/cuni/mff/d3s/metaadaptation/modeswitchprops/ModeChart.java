@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 Charles University in Prague
+ * Copyright 2017 Charles University in Prague
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,30 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *******************************************************************************/
-package cz.cuni.mff.d3s.metaadaptation.modeswitch;
+package cz.cuni.mff.d3s.metaadaptation.modeswitchprops;
+
+import java.util.Set;
 
 /**
- * A function that computes the fitness of the system to guide
- * the system in the non-deterministic mode switching search.
- * 
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface NonDetModeSwitchFitness {
-	
-	/**
-	 * The measured fitness of the system.
-	 * @param currentTime The current simulation time.
-	 * @param knowledgeValues Values of the required knowledge fields,
-	 * 		specified by {@link #getKnowledgeNames()}.
-	 * @return The measured fitness of the system.
-	 */
-	double getFitness(long currentTime, Component component);
-	
-	/**
-	 * Forget so far measured values and start new measurement.
-	 * Called when the system starts to operate with new parameters
-	 * of non-deterministic mode switching.
-	 */
-	void restart();
+public interface ModeChart {
+	public Set<Mode> getModes();
+	public Set<Transition> getTransitions();
 }

@@ -13,24 +13,12 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *******************************************************************************/
-package cz.cuni.mff.d3s.metaadaptation.modeswitch;
-
-import cz.cuni.mff.d3s.metaadaptation.search.StateSpaceSearch;
+package cz.cuni.mff.d3s.metaadaptation.modeswitchprops;
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface Component {
+public interface Mode {
 
-	public String getId();
-	public ModeChart getModeChart();
-	public StateSpaceSearch getStateSpaceSearch();
-	
-	// Callbacks
-	public void nonDeterminismLevelChanged(double probability);
-	
-	public double getUtility();
-	
-	public abstract void restartUtility();
 }

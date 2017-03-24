@@ -51,11 +51,8 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	public Double currentNonDeterminismLevel;
 	public Double nextNonDeterminismLevel;
 	
-	public NonDetModeSwitchFitness evaluator;
-	
 	
 	public NonDeterministicModeSwitchingManager(long startTime,
-			NonDetModeSwitchFitness eval,
 			TimeProgress timer, Component component)
 					throws InstantiationException, IllegalAccessException {
 		if(!isValidComponent(component)){
@@ -69,7 +66,6 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 		this.startTime = startTime;
 		stateSpace = new NonDetModeSwitchAnnealStateSpace(startingNondeterminism);
 		this.timer = timer;
-		evaluator = eval;
 		managedComponent = component;
 		currentNonDeterminismLevel = startingNondeterminism;
 	}
@@ -94,7 +90,7 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 		// Check whether to measure
 		Mode mode = managedComponent.getModeChart().getCurrentMode();
 		if(!mode.isFitnessComputed()){
-			evaluator.restart();
+			managedComponent.restartUtility();
 			if(verbose){
 				System.out.println(String.format("Non-deterministic mode switching "
 					+ "skipping fitness monitor in state: %s",
@@ -105,7 +101,7 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 		}
 				
 		// Measure the current fitness
-		double energy = evaluator.getFitness(currentTime, managedComponent);
+		double energy = managedComponent.getUtility();
 		
 		// Store fitness value for the current non-determinism
 		stateSpace.getState(currentNonDeterminismLevel).setEnergy(energy);
@@ -174,7 +170,7 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 		reconfigureModeChart(nextNonDeterminismLevel);
 		currentNonDeterminismLevel = nextNonDeterminismLevel;
 		// Restart the evaluator for next measurements with new probabilities
-		evaluator.restart();
+		managedComponent.restartUtility();
 
 		// Notify that the probability has changed
 		managedComponent.nonDeterminismLevelChanged(currentNonDeterminismLevel);
