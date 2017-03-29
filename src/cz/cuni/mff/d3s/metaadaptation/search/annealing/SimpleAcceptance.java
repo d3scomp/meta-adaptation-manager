@@ -21,20 +21,20 @@ package cz.cuni.mff.d3s.metaadaptation.search.annealing;
  */
 public class SimpleAcceptance implements AcceptanceProbabilityFunction {
 
-	/* (non-Javadoc)
-	 * @see cz.cuni.mff.d3s.jdeeco.adaptation.search.annealing.AcceptanceProbabilityFunction#getAcceptanceProbability(cz.cuni.mff.d3s.jdeeco.adaptation.search.annealing.AnnealingState, cz.cuni.mff.d3s.jdeeco.adaptation.search.annealing.AnnealingState, cz.cuni.mff.d3s.jdeeco.adaptation.search.annealing.Temperature)
-	 */
-	@Override
-	public double getAcceptanceProbability(AnnealingState currentState, AnnealingState newState,
-			Temperature temperature) {
-		
-		if(newState.getEnergy() >= currentState.getEnergy()){
-			// It gets harder to switch to worse state as temperature cools down
-			return temperature.getTemperature();
-		} else {
-			// It gets easier to switch to better state as temperature cools down
-			return 1 - temperature.getTemperature();
-		}
-	}
+//	/* (non-Javadoc)
+//	 * @see cz.cuni.mff.d3s.jdeeco.adaptation.search.annealing.AcceptanceProbabilityFunction#getAcceptanceProbability(cz.cuni.mff.d3s.jdeeco.adaptation.search.annealing.AnnealingState, cz.cuni.mff.d3s.jdeeco.adaptation.search.annealing.AnnealingState, cz.cuni.mff.d3s.jdeeco.adaptation.search.annealing.Temperature)
+//	 */
+//	@Override
+//	public double getAcceptanceProbability(AnnealingState currentState, AnnealingState newState,
+//			Temperature temperature) {
+//		
+//		if(newState.getEnergy() >= currentState.getEnergy()){
+//			// It gets harder to switch to worse state as temperature cools down
+//			return temperature.getTemperature();
+//		} else {
+//			// It gets easier to switch to better state as temperature cools down
+//			return 1 - temperature.getTemperature();
+//		}
+//	}
 
 }

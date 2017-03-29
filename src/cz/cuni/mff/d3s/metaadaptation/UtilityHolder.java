@@ -13,12 +13,36 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *******************************************************************************/
-package cz.cuni.mff.d3s.metaadaptation.modeswitch;
+package cz.cuni.mff.d3s.metaadaptation;
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface Guard {
-	public boolean isSatisfied();
+public class UtilityHolder {
+	private double utilitySum;
+	private int utilityCnt;
+	
+	public UtilityHolder(){
+		utilitySum = 0;
+		utilityCnt = 0;
+	}
+	
+	public UtilityHolder(double utilitySum, int utilityCnt){
+		this.utilitySum = utilitySum;
+		this.utilityCnt = utilityCnt;
+	}
+	
+	public void addMeasurement(double measurement){
+		utilitySum += measurement;
+		utilityCnt++;
+	}
+	
+	public double getUtility(){
+		if(utilityCnt == 0){
+			return 0;
+		}
+		
+		return utilitySum / (double) utilityCnt;
+	}
 }

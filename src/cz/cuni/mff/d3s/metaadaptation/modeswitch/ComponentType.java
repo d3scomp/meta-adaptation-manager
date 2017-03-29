@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2016 Charles University in Prague
+ * Copyright 2017 Charles University in Prague
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,17 +13,13 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *******************************************************************************/
-package cz.cuni.mff.d3s.metaadaptation.search;
+package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 
 /**
- * Represents a search engine able to search a state space.
- * 
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface StateSpaceSearch {
-	
-//	void processParameters(SearchParameters parameters);
-//	SearchState getNextState(SearchState currentState);
-//	boolean isFinished(SearchState currentState);
+public interface ComponentType {
+	public double getUtility();
+	public double getUtilityThreshold();
 }

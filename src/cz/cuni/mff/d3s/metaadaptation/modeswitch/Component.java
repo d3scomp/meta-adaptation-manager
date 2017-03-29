@@ -23,14 +23,14 @@ import cz.cuni.mff.d3s.metaadaptation.search.StateSpaceSearch;
  */
 public interface Component {
 
-	public String getId();
+	//public String getId();
 	public ModeChart getModeChart();
-	public StateSpaceSearch getStateSpaceSearch();
+	//public StateSpaceSearch getStateSpaceSearch();
 	
 	// Callbacks
-	public void nonDeterminismLevelChanged(double probability);
+	//public void nonDeterminismLevelChanged(double probability);
 	
-	public double getUtility();
+	public ComponentType getType();
 	
-	public abstract void restartUtility();
+	
 }

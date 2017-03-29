@@ -15,6 +15,8 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 
+import java.util.function.Predicate;
+
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
@@ -22,10 +24,7 @@ package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 public interface Transition {
 	public Mode getFrom();
 	public Mode getTo();
-	public Guard getGuard();
-	public boolean isGuardSatisfied();
-	public double getProbability();
-	public void setProbability(double probability);
-	public boolean isDynamic();
-	public void setDynamic(boolean isDynamic);
+	public int getPriority();
+	public void setPriority(int priority);
+	public Predicate<Void> getGuard();
 }

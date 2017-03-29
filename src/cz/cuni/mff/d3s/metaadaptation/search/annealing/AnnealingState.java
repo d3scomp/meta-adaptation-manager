@@ -25,17 +25,17 @@ import cz.cuni.mff.d3s.metaadaptation.search.SearchState;
  */
 public interface AnnealingState extends SearchState {
 
-	/**
-	 * Provides the energy of the state in the range from 0 to 1.
-	 * 
-	 * @return The energy of the state
-	 */
-	double getEnergy();
-
-	/**
-	 * Provides the set of neighbors of the state.
-	 * 
-	 * @return The set of neighbors of the state.
-	 */
-	AnnealingState[] getNeighbors();
+//	/**
+//	 * Provides the energy of the state in the range from 0 to 1.
+//	 * 
+//	 * @return The energy of the state
+//	 */
+//	double getEnergy();
+//
+//	/**
+//	 * Provides the set of neighbors of the state.
+//	 * 
+//	 * @return The set of neighbors of the state.
+//	 */
+//	AnnealingState[] getNeighbors();
 }

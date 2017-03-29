@@ -16,6 +16,7 @@
 package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
@@ -25,9 +26,9 @@ public interface ModeChart {
 	public Set<Mode> getModes();
 	public Mode getCurrentMode();
 	public Set<Transition> getTransitions();
-	public void addTransition(Transition transition);
+	public Transition addTransition(Mode from, Mode to, Predicate<Void> guard);
 	public void removeTransition(Transition transition);
-	public Transition createTransition(Mode from, Mode to, Guard guard);
-	public boolean isModified();
-	public void setModified();
+	//public Transition createTransition(Mode from, Mode to, Guard guard);
+	//public boolean isModified();
+	//public void setModified();
 }

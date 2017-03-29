@@ -15,11 +15,20 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 
-public class TrueGuard implements Guard {
+import java.util.Random;
+import java.util.function.Predicate;
 
+public class ProbabilisticGuard implements Predicate<Void> {
+
+	private static Random random = new Random();
+	
+	/* (non-Javadoc)
+	 * @see java.util.function.Predicate#test(java.lang.Object)
+	 */
 	@Override
-	public boolean isSatisfied() {
-		return true;
+	public boolean test(Void t) {
+		return random.nextDouble() < NonDeterministicModeSwitchingManager.transitionProbability;
 	}
+
 
 }
