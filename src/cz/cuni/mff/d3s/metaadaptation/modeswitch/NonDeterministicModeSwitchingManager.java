@@ -50,20 +50,24 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	
 	public static Mode trainTo = null;
 	
-	public static File trainingOutput = null;
+//	public static File trainingOutput = null;
 	
 	
 	private final List<Component> components;
 
 	private Map<Transition, Double> utility = null;
 	
-	private PrintWriter writer;
+//	private PrintWriter writer;
 	
-	private boolean trainingInitialized;
+	private boolean initialized;
 
 	private Mode plannedFrom;
 	
 	private Mode plannedTo;
+	
+//	private Transition addedTransition = null;
+	
+//	private double measuredUtility = 0;
 	
 		
 //	public NonDetModeSwitchAnnealStateSpace stateSpace;
@@ -100,10 +104,10 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 				throw new IllegalStateException(String.format("The %s has to be set in the %s mode",
 						"trainTransition", "training"));
 			}
-			if(trainingOutput == null){
+			/*if(trainingOutput == null){
 				throw new IllegalStateException(String.format("The %s has to be set in the %s mode",
 						"trainingOutput", "training"));
-			}
+			}*/
 		}
 		
 //		this.startTime = startTime;
@@ -122,8 +126,8 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 			this.utility = new HashMap<>();
 		}
 		
-		trainingInitialized = false;
-		writer = new PrintWriter(trainingOutput);
+		initialized = false;
+//		writer = new PrintWriter(trainingOutput);
 		
 //		currentNonDeterminismLevel = startingNondeterminism;
 	}
@@ -137,9 +141,9 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	}
 	
 	public void terminate(){
-		if(training){
+		/*if(training){
 			writer.close();
-		}
+		}*/
 	}
 
 	/* (non-Javadoc)
@@ -147,25 +151,24 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void monitor() {
-		if(training && trainingInitialized){
+		/*if(training && trainingInitialized){
 			for(Component component : components){
 				double u = component.getType().getUtility();
 				writer.println(String.format("%f", u));
 			}
 			
 			return;
-		}
+		}*/
 		
-		if(training && !trainingInitialized && verbose){
+		if(training && !initialized && verbose){
 			for(Component component : components){
 				printMissingTransitions(component.getModeChart());
 			}
 		}
 		
-		if(!training){
-			// TOOD: record utility
-			
-		}
+		/*if(!components.isEmpty()){
+			measuredUtility = components.get(0).getType().getUtility();
+		}*/
 	}
 
 	/* (non-Javadoc)
@@ -173,15 +176,19 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	 */
 	@Override
 	public boolean analyze() {
-		if(training && !trainingInitialized){
+		return !initialized;
+		/*if(training && !initialized){
 			return true;
 		}
 		if(training){
 			return false;
-		}
+		}*/
 		
-		// TODO: analyze the utility of added transitions - decide on adding replacing transitions
-		return true;
+		/*if(!components.isEmpty()){
+			return measuredUtility > components.get(0).getType().getUtilityThreshold();
+		}*/
+		
+		//return false;
 	}
 
 	/* (non-Javadoc)
@@ -189,13 +196,27 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void plan() {
-		if(training) {
+		//if(training) {
 			plannedFrom = trainFrom;
 			plannedTo = trainTo;
 			return;
-		}
+		//}
 		
-		// TODO: plan some good transition to add		
+		/*Transition bestTransition = null;
+		double minUtility = Double.MAX_VALUE;
+		for(Transition t : utility.keySet()){
+			if(minUtility > utility.get(t)){
+				minUtility = utility.get(t);
+				bestTransition = t;
+			}
+		}
+		if(bestTransition != null && !bestTransition.equals(addedTransition)){
+			plannedFrom = bestTransition.getFrom();
+			plannedTo = bestTransition.getTo();
+		} else {
+			plannedFrom = null;
+			plannedTo = null;
+		}*/		
 	}
 
 	/* (non-Javadoc)
@@ -203,21 +224,21 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void execute() {
+		/*if(plannedFrom != null && plannedTo != null && addedTransition != null){
+			
+		}*/
+		
 		if(plannedFrom == null || plannedTo == null){
-			System.err.println("EMS - planned transition is null.");
 			return;
 		}
 		
 		for(Component component : components){
-			Transition t = component.getModeChart().addTransition(plannedFrom,
+			Transition addedTransition = component.getModeChart().addTransition(plannedFrom,
 					plannedTo, new ProbabilisticGuard());
-			t.setPriority(transitionPriority);
+			addedTransition.setPriority(transitionPriority);
 		}
-		
-		if(training){
-			trainingInitialized = true;
-		}
-		
+		initialized = true;
+				
 		if(verbose){
 			System.out.println(String.format("The transition from %s to %s added.",
 					plannedFrom, plannedTo));
