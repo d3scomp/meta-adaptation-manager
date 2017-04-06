@@ -20,6 +20,8 @@ package cz.cuni.mff.d3s.metaadaptation.modeswitchprops;
  *
  */
 public interface Component {
+
+	public ModeChart getModeChart();
 	public double getUtility();
 	public double getUtilityThreshold();
 }

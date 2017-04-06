@@ -15,6 +15,7 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitchprops;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -26,8 +27,20 @@ import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
  *
  */
 public class ModeSwitchPropsManager implements MAPEAdaptation {
+	
+	public static boolean verbose = false;
+	
+	public static boolean training = false;
+	
+	public static String trainProperty = null;
 
-	public static double step = 0.1;
+	public static double trainValue = 0.0;
+	
+	private final List<Component> components;
+	
+	private boolean initialized;
+	
+	/*public static double step = 0.1;
 	
 	private final Component component;
 	private final ModeChart modeChart;
@@ -38,26 +51,27 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 	private double lastUtility;
 	private Transition transition;
 	private boolean increase;
-	private String propertyName;
+	private String propertyName;*/
 	
-	public ModeSwitchPropsManager(Component component, ModeChart modeChart) {
-		if(component == null){
-			throw new IllegalArgumentException(String.format("The %s argument is null.", component));
+	public ModeSwitchPropsManager(List<Component> components) {
+		if(components == null){
+			throw new IllegalArgumentException(String.format("The %s argument is null.", components));
 		}
-		if(modeChart == null){
+		/*if(modeChart == null){
 			throw new IllegalArgumentException(String.format("The %s argument is null.", modeChart));
-		}
+		}*/
 		
-		this.component = component;
-		this.modeChart = modeChart;
+		this.components = components;
+		initialized = false;
+		//this.modeChart = modeChart;
 		
-		random = new Random();
+		/*random = new Random();
 		
 		utility = 0;
 		lastUtility = 0;
 		transition = null;
 		increase = false;
-		propertyName = null;
+		propertyName = null;*/
 	}
 	
 	/* (non-Javadoc)
@@ -65,7 +79,7 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void monitor() {
-		utility = component.getUtility();
+		//utility = component.getUtility();
 		
 	}
 
@@ -74,8 +88,10 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 	 */
 	@Override
 	public boolean analyze() {
-		lastUtility = utility;
-		return utility < component.getUtilityThreshold();
+
+		return !initialized;
+		//lastUtility = utility;
+		//return utility < component.getUtilityThreshold();
 	}
 
 	/* (non-Javadoc)
@@ -83,7 +99,7 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void plan() {
-		if(transition == null){
+		/*if(transition == null){
 			// Plan the first change made by this mechanism
 			transition = getRandomTransition();
 			increase = random.nextBoolean();
@@ -93,7 +109,7 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 				reset();
 			}
 			// Otherwise everything is planned
-			return;
+			return;*
 		}
 		
 		if(utility < lastUtility){
@@ -113,12 +129,12 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 				// If a transition without tunable parameter was selected take no action
 				reset();
 			}
-		}
+		}*/
 		
 		// Continue the same improvement as done the lase time
 	}
 	
-	private Transition getRandomTransition(){
+	/*private Transition getRandomTransition(){
 		Set<Transition> transitions = modeChart.getTransitions();
 		int target = random.nextInt(transitions.size());
 		Transition[] transitionArray = transitions.toArray(new Transition[]{});
@@ -138,20 +154,35 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 		String[] namesArray = propNames.toArray(new String[]{});
 		
 		return namesArray[target];
-	}
+	}*/
 	
-	private void reset(){
+	/*private void reset(){
 		transition = null;
 		increase = false;
 		propertyName = null;
-	}
+	}*/
 
 	/* (non-Javadoc)
 	 * @see cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation#execute()
 	 */
 	@Override
 	public void execute() {
-		if(transition != null && propertyName != null){
+		if(trainProperty == null){
+			return;
+		}
+		
+		for(Component component : components){
+			for(Transition transition : component.getModeChart().getTransitions()){
+				for(String property : transition.getGuardParams().keySet()){
+					if(property.equals(trainProperty)){
+						transition.setGuardParam(property, trainValue);
+					}
+				}
+			}
+		}
+		initialized = true;
+		
+		/*if(transition != null && propertyName != null){
 			double value = transition.getGuardParams().get(propertyName);
 			if(increase){
 				value += step;
@@ -159,7 +190,7 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 				value -= step;
 			}
 			transition.setGuardParam(propertyName, value);
-		}		
+		}*/		
 	}
 
 }
