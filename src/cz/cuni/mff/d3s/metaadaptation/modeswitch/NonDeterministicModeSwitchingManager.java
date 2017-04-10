@@ -50,6 +50,10 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	
 	public static Mode trainTo = null;
 	
+	public static Mode trainFrom2 = null;
+	
+	public static Mode trainTo2 = null;
+	
 //	public static File trainingOutput = null;
 	
 	
@@ -236,6 +240,16 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 			Transition addedTransition = component.getModeChart().addTransition(plannedFrom,
 					plannedTo, new ProbabilisticGuard());
 			addedTransition.setPriority(transitionPriority);
+			if(trainFrom2 != null && trainTo2 != null){
+
+				addedTransition = component.getModeChart().addTransition(trainFrom2,
+						trainTo2, new ProbabilisticGuard());
+				addedTransition.setPriority(transitionPriority);
+				if(verbose){
+					System.out.println(String.format("The transition from2 %s to2 %s added.",
+							trainFrom2, trainTo2));
+				}
+			}
 		}
 		initialized = true;
 				
