@@ -29,12 +29,19 @@ public class MetaAdaptationManager {
 		
 	public List<MAPEAdaptation> adaptations;
 	
+	private boolean verbose;
+	
 	public MetaAdaptationManager(){
-		adaptations = new ArrayList<>();		
+		adaptations = new ArrayList<>();
+		verbose = false;
 	}
 	
 	public void addAdaptation(MAPEAdaptation adaptation){
 		adaptations.add(adaptation);
+	}
+	
+	public void setVerbosity(boolean verbosity){
+		verbose = verbosity;
 	}
 	
 	/**

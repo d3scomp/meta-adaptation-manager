@@ -38,14 +38,15 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 
 //	public static double startingNondeterminism = NonDetModeSwitchAnnealStateSpace.DEFAULT_STARTING_NONDETERMINISM;
 	
-	public static boolean verbose = false;
+	private boolean verbose = false;
 	
-	public static double transitionProbability = 0.01;
+	private double transitionProbability = 0.01;
 	
-	public static int transitionPriority = 10;
+	private int transitionPriority = 10;
 	
-	public static boolean training = false;
+	private boolean training = false;
 	
+	// TODO: make list of training transitions
 	public static Mode trainFrom = null;
 	
 	public static Mode trainTo = null;
@@ -134,6 +135,23 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 //		writer = new PrintWriter(trainingOutput);
 		
 //		currentNonDeterminismLevel = startingNondeterminism;
+	}
+	
+
+	public void setVerbosity(boolean verbosity){
+		verbose = verbosity;
+	}
+	
+	public void setTransitionProbability(double probability){
+		transitionProbability = probability;
+	}
+	
+	public void setTransitionPriority(int priority){
+		transitionPriority = priority;
+	}
+	
+	public void setTraining(boolean training){
+		this.training = training;
 	}
 	
 	private boolean isValidComponent(Component component) {
@@ -238,12 +256,12 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 		
 		for(Component component : components){
 			Transition addedTransition = component.getModeChart().addTransition(plannedFrom,
-					plannedTo, new ProbabilisticGuard());
+					plannedTo, new ProbabilisticGuard(transitionProbability));
 			addedTransition.setPriority(transitionPriority);
 			if(trainFrom2 != null && trainTo2 != null){
 
 				addedTransition = component.getModeChart().addTransition(trainFrom2,
-						trainTo2, new ProbabilisticGuard());
+						trainTo2, new ProbabilisticGuard(transitionProbability));
 				addedTransition.setPriority(transitionPriority);
 				if(verbose){
 					System.out.println(String.format("The transition from2 %s to2 %s added.",

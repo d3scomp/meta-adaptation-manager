@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
+import cz.cuni.mff.d3s.metaadaptation.MetaAdaptationManager;
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
@@ -42,6 +43,7 @@ public class ComponentIsolationManager implements MAPEAdaptation {
 	
 	private final ComponentManager components;
 	private final Set<ComponentPortPair> isolationCandidates;
+	private boolean verbose;
 	
 	public ComponentIsolationManager(ComponentManager componentManager){
 		if(componentManager == null){
@@ -51,6 +53,11 @@ public class ComponentIsolationManager implements MAPEAdaptation {
 		components = componentManager;
 		isolationCandidates = new HashSet<>();
 	}
+
+	public void setVerbosity(boolean verbosity){
+		verbose = verbosity;
+	}
+	
 
 	/* (non-Javadoc)
 	 * @see cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation#monitor()

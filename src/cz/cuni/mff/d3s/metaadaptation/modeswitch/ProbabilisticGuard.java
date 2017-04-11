@@ -22,12 +22,18 @@ public class ProbabilisticGuard implements Predicate<Void> {
 
 	private static Random random = new Random();
 	
+	private final double probability;
+	
+	public ProbabilisticGuard(double probability){
+		this.probability = probability;
+	}
+	
 	/* (non-Javadoc)
 	 * @see java.util.function.Predicate#test(java.lang.Object)
 	 */
 	@Override
 	public boolean test(Void t) {
-		return random.nextDouble() < NonDeterministicModeSwitchingManager.transitionProbability;
+		return random.nextDouble() < probability;
 	}
 
 

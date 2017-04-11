@@ -17,9 +17,9 @@ public class CorrelationManager implements MAPEAdaptation {
 	/**
 	 * Specify whether to print the values being processed by the correlation computation.
 	 */
-	public static boolean dumpValues = false;
+	private boolean dumpValues = false;
 
-	public static boolean verbose = false;
+	private boolean verbose = false;
 
 	/**
 	 * Time slot duration in milliseconds. Correlation of values is computed
@@ -76,6 +76,15 @@ public class CorrelationManager implements MAPEAdaptation {
 		this.components = new ArrayList<>();
 		this.ensembleManager = ensembleManager;
 		this.ensembleFactory = ensembleFactory;
+	}
+	
+
+	public void setVerbosity(boolean verbosity){
+		verbose = verbosity;
+	}
+
+	public void setDumpValues(boolean dumpValues){
+		this.dumpValues = dumpValues;
 	}
 	
 	public void setComponents(Set<Component> components){
@@ -322,7 +331,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @return The list of all the pairs of labels that are common to both the specified components.
 	 * All the pairs are inserted in both the possible ways [a,b] and [b,a].
 	 */
-	private static List<LabelPair> getLabelPairs(
+	private List<LabelPair> getLabelPairs(
 			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
 			ComponentPair components){
 		List<LabelPair> labelPairs = new ArrayList<LabelPair>();
@@ -353,7 +362,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param history The history of knowledge of all the components in the system.
 	 * @return The set of all label pairs available among all the components in the system.
 	 */
-	private static Set<LabelPair> getAllLabelPairs(
+	private Set<LabelPair> getAllLabelPairs(
 			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history){
 		Set<LabelPair> labelPairs = new HashSet<LabelPair>();
 
@@ -373,7 +382,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param componentIds The set of components IDs.
 	 * @return The list of pairs of components IDs.
 	 */
-	private static List<ComponentPair> getComponentPairs(Set<String> componentIds){
+	private List<ComponentPair> getComponentPairs(Set<String> componentIds){
 		List<ComponentPair> componentPairs = new ArrayList<>();
 
 		String[] componentArr = componentIds.toArray(new String[0]);
@@ -391,7 +400,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param labels The pair knowledge fields required the components to have.
 	 * @return All the components containing the given pair of knowledge fields.
 	 */
-	private static Set<String> getComponents(
+	private Set<String> getComponents(
 			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
 			LabelPair labels){
 
@@ -415,7 +424,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param labels The pair knowledge fields the values will be extracted from.
 	 * @return The list of knowledge values identified by given labels from given components.
 	 */
-	private static List<KnowledgeQuadruple> extractKnowledgeHistory(
+	private List<KnowledgeQuadruple> extractKnowledgeHistory(
 			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
 			ComponentPair components,
 			LabelPair labels){
@@ -461,7 +470,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param labels The pair knowledge fields the values will be extracted from.
 	 * @return The matrix of distances and distance classes for given knowledge fields among all the components.
 	 */
-	private static List<DistancePair> computeDistances(
+	private List<DistancePair> computeDistances(
 			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
 			LabelPair labels){
 
@@ -512,7 +521,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * that ensures the satisfaction of confidence level by the correlation of the knowledge identified by the labels.
 	 * Double.NaN if returned if the confidence level can't be satisfied.
 	 */
-	private static double getDistanceBoundary(List<DistancePair> distancePairs, LabelPair labels){
+	private double getDistanceBoundary(List<DistancePair> distancePairs, LabelPair labels){
 		// Sort the data by the distance of first knowledge field
 		Collections.sort(distancePairs);
 		if(dumpValues) {
@@ -548,7 +557,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param distancePairs The values to be filled into the builder.
 	 * @param builder The StringBuilder to be filled.
 	 */
-	private static void fillDistances(List<DistancePair> distancePairs, StringBuilder builder){
+	private void fillDistances(List<DistancePair> distancePairs, StringBuilder builder){
 		builder.append("time: ");
 		for(DistancePair dp : distancePairs)
 		{
@@ -580,7 +589,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param c2Values2 List of values of component 2 for label 2.
 	 * @return A quadruple of values with the smallest common time slot.
 	 */
-	private static KnowledgeQuadruple getMinCommonTimeSlotValues(
+	private KnowledgeQuadruple getMinCommonTimeSlotValues(
 			List<CorrelationMetadataWrapper<? extends Object>> c1Values1,
 			List<CorrelationMetadataWrapper<? extends Object>> c1Values2,
 			List<CorrelationMetadataWrapper<? extends Object>> c2Values1,
@@ -608,7 +617,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param timeSlot The required time slot for the extracted value.
 	 * @return The first value within the given time slot.
 	 */
-	private static CorrelationMetadataWrapper<? extends Object> getFirstValueForTimeSlot(
+	private CorrelationMetadataWrapper<? extends Object> getFirstValueForTimeSlot(
 			List<CorrelationMetadataWrapper<? extends Object>> values, long timeSlot){
 		CorrelationMetadataWrapper<? extends Object> earliestValue = null;
 		for(CorrelationMetadataWrapper<? extends Object> value : values){
@@ -631,7 +640,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param timeSlot The time slot for which (and for all preceding) the values will
 	 * be removed.
 	 */
-	private static void removeEarlierValuesForTimeSlot(
+	private void removeEarlierValuesForTimeSlot(
 			List<CorrelationMetadataWrapper<? extends Object>> values, long timeSlot){
 		List<CorrelationMetadataWrapper<? extends Object>> toRemove = new ArrayList<>();
 		for(CorrelationMetadataWrapper<? extends Object> value : values){
