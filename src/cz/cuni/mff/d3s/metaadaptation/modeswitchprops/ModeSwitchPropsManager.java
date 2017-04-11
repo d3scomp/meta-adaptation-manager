@@ -36,6 +36,10 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 
 	public static double trainValue = 0.0;
 	
+	public static String trainProperty2 = null;
+
+	public static double trainValue2 = 0.0;
+	
 	private final List<Component> components;
 	
 	private boolean initialized;
@@ -176,6 +180,19 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 				for(String property : transition.getGuardParams().keySet()){
 					if(property.equals(trainProperty)){
 						transition.setGuardParam(property, trainValue);
+						if(verbose){
+							System.out.println(String.format(
+									"The guard property %s in %s in %s set to %f.",
+									property, transition, component, trainValue));
+						}
+					}
+					if(trainProperty2 != null && property.equals(trainProperty2)){
+						transition.setGuardParam(property, trainValue2);
+						if(verbose){
+							System.out.println(String.format(
+									"The guard property %s in %s in %s set to %f.",
+									property, transition, component, trainValue2));
+						}
 					}
 				}
 			}
