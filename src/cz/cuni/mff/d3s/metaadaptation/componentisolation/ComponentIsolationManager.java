@@ -15,11 +15,12 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.componentisolation;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
-import cz.cuni.mff.d3s.metaadaptation.MetaAdaptationManager;
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
@@ -27,22 +28,20 @@ import cz.cuni.mff.d3s.metaadaptation.MetaAdaptationManager;
  */
 public class ComponentIsolationManager implements MAPEAdaptation {
 	
-	private class ComponentPortPair {
+	private class ComponentFaults {
 		public final Component component;
-		public final Port port;
+		public final Set<String> faultyKnowledge;
+		public final Set<Port> portsToRemove;
 		
-		public ComponentPortPair(Component component, Port port){
+		public ComponentFaults(Component component, Set<String> faultyKnowledge){
 			this.component = component;
-			this.port = port;
-		}
-		
-		public void removePort(){
-			component.removePort(port);
+			this.faultyKnowledge = faultyKnowledge;
+			portsToRemove = new HashSet<>();
 		}
 	}
 	
 	private final ComponentManager components;
-	private final Set<ComponentPortPair> isolationCandidates;
+	private final Set<ComponentFaults> isolationCandidates;
 	private boolean verbose;
 	
 	public ComponentIsolationManager(ComponentManager componentManager){
@@ -65,8 +64,27 @@ public class ComponentIsolationManager implements MAPEAdaptation {
 	@Override
 	public void monitor() {
 		for(Component component : components.getComponents()){
-			for(Port port : component.getPorts())
-			component.monitorHealth(port);
+			Set<String> faults = component.getFaultyKnowledge();
+			if(!faults.isEmpty()){
+				isolationCandidates.add(new ComponentFaults(component, faults));
+				
+				if(verbose){
+					StringBuilder builder = new StringBuilder();
+					for(String fault : faults){
+						builder.append("\"").append(fault).append("\", ");
+					}
+					// delete the last comma in the list created above
+					builder.setLength(builder.length() - 2);
+					System.out.println(String.format("Faulty knowledge %s found in %s.",
+							builder.toString(), component));
+					
+					System.out.println("\nKNOWLEDGE:");
+					Map<String, Object> values = component.getKnowledge();
+					for(String k : values.keySet()){
+						System.out.println(k + " : " + values.get(k));
+					}
+				}
+			}
 		}
 	}
 
@@ -75,29 +93,39 @@ public class ComponentIsolationManager implements MAPEAdaptation {
 	 */
 	@Override
 	public boolean analyze() {
-		boolean defectDetected = false;
-		for(Component component : components.getComponents()){
-			for(Port port : component.getPorts()){
-				boolean health = component.getHealth(port);
-				if(health == false){
-					defectDetected = true;
+		if(isolationCandidates.isEmpty()){
+			return false;
+		}
+		
+		boolean canPortBeRemoved = false;
+		for(ComponentFaults faultyComponent : isolationCandidates){
+			for(Port port : faultyComponent.component.getPorts()){
+				if(!Collections.disjoint(port.getExposedKnowledge(),
+						faultyComponent.faultyKnowledge)){
+					faultyComponent.portsToRemove.add(port);
+					canPortBeRemoved = true;
+
+					if(verbose){
+						System.out.println(String.format("Port %s in %s can be removed.",
+								port, faultyComponent.component));
+					}
 				}
 			}
 		}
 		
-		return defectDetected;
+		return canPortBeRemoved;
 	}
 
 	/* (non-Javadoc)
 	 * @see cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation#plan()
 	 */
 	@Override
-	public void plan() {
-		for(Component component : components.getComponents()){
-			for(Port port : component.getPorts()){
-				boolean health = component.getHealth(port);
-				if(health == false){
-					isolationCandidates.add(new ComponentPortPair(component, port));
+	public void plan() {		
+		if(verbose){
+			for(ComponentFaults faultyComponent : isolationCandidates){
+				for(Port port : faultyComponent.portsToRemove){
+					System.out.println(String.format("Port %s in %s will be removed.",
+									port, faultyComponent.component));
 				}
 			}
 		}
@@ -108,11 +136,16 @@ public class ComponentIsolationManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void execute() {
-		for(ComponentPortPair candidate : isolationCandidates){
-			candidate.removePort();
+		for(ComponentFaults candidate : isolationCandidates){
+			for(Port port : candidate.portsToRemove){
+				candidate.component.removePort(port);
+				if(verbose){
+					System.out.println(String.format("Port %s in %s removed.",
+							port, candidate.component));
+				}
+			}
 		}
 		isolationCandidates.clear();
 	}
-	
 	
 }

@@ -15,10 +15,12 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.componentisolation;
 
+import java.util.Set;
+
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
 public interface Port {
-	
+	public Set<String> getExposedKnowledge();
 }
