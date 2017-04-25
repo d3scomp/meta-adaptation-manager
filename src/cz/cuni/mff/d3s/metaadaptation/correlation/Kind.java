@@ -1,3 +1,4 @@
+package cz.cuni.mff.d3s.metaadaptation.correlation;
 /*******************************************************************************
  * Copyright 2017 Charles University in Prague
  *  
@@ -13,19 +14,12 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *******************************************************************************/
-package cz.cuni.mff.d3s.metaadaptation.correlation;
-
-import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface Component {
-
-	public Map<String, Object> getKnowledge();
-	public Set<String> getFaultyKnowledge();
-	public Set<ComponentPort> getPorts();
-	public void addPort(Set<String> exposedKnowledge);
+public enum Kind {
+	Comsumer,
+	Producer;
 }

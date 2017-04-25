@@ -19,20 +19,6 @@ package cz.cuni.mff.d3s.metaadaptation.correlation;
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface EnsembleManager {
-	public void addEnsemble(Class<?> ensemble);
-	/*
-	 * for(DEECoNode node : connectors){
-			node.deployEnsemble(ensemble);
-		}
-	 * 
-	 * */
-	
-	public void removeEnsemble(String name);
-	/*
-	 * for(DEECoNode node : connectors){
-			node.undeployEnsemble(ensemble.getName());
-		}
-	 * */
-	
+public interface ComponentPort {
+
 }

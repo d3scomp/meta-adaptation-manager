@@ -15,17 +15,13 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.correlation;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface Component {
+public interface DynamicConnector {
 
-	public Map<String, Object> getKnowledge();
-	public Set<String> getFaultyKnowledge();
-	public Set<ComponentPort> getPorts();
-	public void addPort(Set<String> exposedKnowledge);
+	public void addPort(Set<String> assumedKnowledge, Kind kind, ComponentPort componentPort);
 }

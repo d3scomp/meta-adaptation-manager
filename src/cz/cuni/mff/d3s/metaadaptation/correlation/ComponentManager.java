@@ -15,19 +15,13 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.correlation;
 
+import java.util.Set;
+
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface EnsembleFactory {
+public interface ComponentManager {
 
-	@SuppressWarnings("rawtypes")
-	public Class createEnsembleDefinition(String correlationFilter,
-			String correlationSubject) throws Exception;
-	
-	@SuppressWarnings("rawtypes")
-	public Class setEnsembleMembershipBoundary(String correlationFilter,
-			String correlationSubject, double boundary) throws Exception;
-	
-	public EnsembleFactoryHelper getHelper();
+	public Set<Component> getComponents();
 }

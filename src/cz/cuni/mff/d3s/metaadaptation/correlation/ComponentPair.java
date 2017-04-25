@@ -19,11 +19,11 @@ public class ComponentPair implements Serializable {
 	/**
 	 * The ID of the first component.
 	 */
-	public final String component1Id;
+	public final Component component1;
 	/**
 	 * The ID of the second component.
 	 */
-	public final String component2Id;
+	public final Component component2;
 	
 	/**
 	 * Creates a new instance of {@link ComponentPair} for the given components IDs.
@@ -31,14 +31,14 @@ public class ComponentPair implements Serializable {
 	 * @param component1Id The ID of the first component.
 	 * @param component2Id The ID of the second component.
 	 */
-	public ComponentPair(String component1Id, String component2Id){
-		if(component1Id == null) throw new IllegalArgumentException(
-				String.format("The \"%s\" argument is null.", "component1Id"));
-		if(component2Id == null) throw new IllegalArgumentException(
-				String.format("The \"%s\" argument is null.", "component2Id"));
+	public ComponentPair(Component component1, Component component2){
+		if(component1 == null) throw new IllegalArgumentException(
+				String.format("The \"%s\" argument is null.", "component1"));
+		if(component2 == null) throw new IllegalArgumentException(
+				String.format("The \"%s\" argument is null.", "component2"));
 		
-		this.component1Id = component1Id;
-		this.component2Id = component2Id;
+		this.component1 = component1;
+		this.component2 = component2;
 	}
 	
 	/**
@@ -57,21 +57,21 @@ public class ComponentPair implements Serializable {
 		
 		ComponentPair other = (ComponentPair) otherPair;
 		
-		return (this.component1Id.equals(other.component1Id)
-				&& this.component2Id.equals(other.component2Id))
-				|| (this.component1Id.equals(other.component2Id)
-						&& this.component2Id.equals(other.component1Id));
+		return (this.component1.equals(other.component1)
+				&& this.component2.equals(other.component2))
+				|| (this.component1.equals(other.component2)
+						&& this.component2.equals(other.component1));
 	}
 	
 	@Override
 	public int hashCode() {
-		String smaller, bigger;
-		if(component1Id.hashCode() < component2Id.hashCode()){
-			smaller = component1Id;
-			bigger = component2Id;
+		Component smaller, bigger;
+		if(component1.hashCode() < component2.hashCode()){
+			smaller = component1;
+			bigger = component2;
 		} else {
-			smaller = component2Id;
-			bigger = component1Id;
+			smaller = component2;
+			bigger = component1;
 		}
 		return String.format("%s;%s", smaller, bigger).hashCode();
 	}

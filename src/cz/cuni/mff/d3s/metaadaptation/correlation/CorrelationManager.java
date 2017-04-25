@@ -8,9 +8,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
+import cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.MediatedKnowledge;
 import cz.cuni.mff.d3s.metaadaptation.correlation.CorrelationLevel.DistanceClass;
+
+import static cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.MEMBER_FILTER_FIELD;
+import static cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.COORD_FILTER_FIELD;;
 
 public class CorrelationManager implements MAPEAdaptation {
 
@@ -25,36 +30,33 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * Time slot duration in milliseconds. Correlation of values is computed
 	 * within these time slots.
 	 */
-	private static final long TIME_SLOT_DURATION = 1000;
+	private static final long TIME_SLOT_DURATION = 1000; // TODO: configurable
 	
 	/**
 	 * Components of the system.
 	 */
-	public final List<Component> components;
+	private final ComponentManager componentManager;
 	
 	/**
 	 * The connectors of the system.
 	 */
-	public final EnsembleManager ensembleManager;
-	
-	public final EnsembleFactory ensembleFactory;
+	private final ConnectorManager connectorManager;
 	
 	/**
 	 * Caches the failures that has been already analyzed, to save time.
-	 *
-	 * String - ID of a component
-	 * String - Label of a knowledge field of the component that has failed
 	 */
-	private Map<String, List<String>> analyzedFailureCache;
+	//private final Map<Component, List<ComponentPort>> analyzedFailureCache;
+	private final Map<Component, Set<String>> analyzedFailures;
+	
+	private final Map<Component, Set<String>> handledFailures;
 	
 	/**
 	 * Holds the history of knowledge of all the other components in the system.
 	 *
-	 * String - ID of a component
 	 * String - Label of a knowledge field of the component
 	 * MetadataWrapper - knowledge field value together with its meta data
 	 */
-	public Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> knowledgeHistoryOfAllComponents;
+	public Map<Component, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> knowledgeHistoryOfAllComponents;
 
 	/**
 	 * Computed distance bounds that ensures the correlation between the data satisfies given confidence level.
@@ -68,14 +70,22 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * a reference to the given system {@link EnsembleManager}.
 	 * @param ensembleManager The system {@link EnsembleManager}.
 	 */
-	public CorrelationManager(EnsembleManager ensembleManager, EnsembleFactory ensembleFactory) {
+	public CorrelationManager(ComponentManager componentManager, ConnectorManager connectorManager) {
+		if(componentManager == null){
+			throw new IllegalArgumentException(String.format("The \"%s\" argument is null.", "componentManager"));
+		}
+		if(connectorManager == null){
+			throw new IllegalArgumentException(String.format("The \"%s\" argument is null.", "connectorManager"));
+		}
+		
 		knowledgeHistoryOfAllComponents = new HashMap<>();
-		analyzedFailureCache = new HashMap<>();
+		//analyzedFailureCache = new HashMap<>();
+		analyzedFailures = new HashMap<>();
+		handledFailures = new HashMap<>();
 		distanceBounds = new HashMap<>();
 
-		this.components = new ArrayList<>();
-		this.ensembleManager = ensembleManager;
-		this.ensembleFactory = ensembleFactory;
+		this.componentManager = componentManager;
+		this.connectorManager = connectorManager;
 	}
 	
 
@@ -86,14 +96,6 @@ public class CorrelationManager implements MAPEAdaptation {
 	public void setDumpValues(boolean dumpValues){
 		this.dumpValues = dumpValues;
 	}
-	
-	public void setComponents(Set<Component> components){
-		this.components.clear();
-		for(Component component : components){
-			this.components.add(component);
-		}
-	}
-
 
 	/**
 	 * For quick debugging.
@@ -106,11 +108,16 @@ public class CorrelationManager implements MAPEAdaptation {
 		StringBuilder b = new StringBuilder(1024);
 		b.append("Printing global history...\n");
 
-		for (String id: knowledgeHistoryOfAllComponents.keySet()) {
+		for (Component component : knowledgeHistoryOfAllComponents.keySet()) {
 
-			b.append("Component " + id + "\n");
+			b.append("Component " + component.toString() + "\n");
 
-			Map<String, List<CorrelationMetadataWrapper<? extends Object>>> componentHistory = knowledgeHistoryOfAllComponents.get(id);
+			Map<String, List<CorrelationMetadataWrapper<? extends Object>>> componentHistory =
+					knowledgeHistoryOfAllComponents.get(component);
+			if(componentHistory == null){
+				System.out.println(String.format("Knowledge of %s not found.", component.toString()));
+				continue;
+			}
 			for (String field : componentHistory.keySet()) {
 				b.append("\t" + field + ":\n");
 
@@ -144,16 +151,17 @@ public class CorrelationManager implements MAPEAdaptation {
 
 	@Override
 	public void monitor() {
-		for(Component c : components){
+		for(Component c : componentManager.getComponents()){
 			Map<String, List<CorrelationMetadataWrapper<?>>> memberKnowledgeHistory =
-				knowledgeHistoryOfAllComponents.get(c.getId());
+				knowledgeHistoryOfAllComponents.get(c);
 			if (memberKnowledgeHistory == null) {
 				memberKnowledgeHistory = new HashMap<>();
-				knowledgeHistoryOfAllComponents.put(c.getId(), memberKnowledgeHistory);
+				knowledgeHistoryOfAllComponents.put(c, memberKnowledgeHistory);
 			}
 			
-			for(String knowlegeField : c.getKnowledgeFields()){
-				Object o = c.getKnowledgeValue(knowlegeField);
+			Map<String, Object> knowledge = c.getKnowledge();
+			for(String knowlegeField : knowledge.keySet()){
+				Object o = knowledge.get(knowlegeField);
 				// ignore fields that are not specified as CorrelationMetadataWrapper instances
 				if (o instanceof CorrelationMetadataWrapper) {
 					addFieldToHistory(memberKnowledgeHistory, (CorrelationMetadataWrapper<?>) o);
@@ -187,13 +195,13 @@ public class CorrelationManager implements MAPEAdaptation {
 	 */
 	@Override
 	public boolean analyze() {
-		Map<String, List<String>> failedFields = getFailedFields();
+		/*Map<String, List<String>> failedFields = getFailedFields();
 		if(failedFields.isEmpty()){
 			// If no failure found, don't run the correlation mechanism
 			return false;
-		}
+		}*/
 		
-		for (String componentId : failedFields.keySet()) {
+		/*for (String componentId : failedFields.keySet()) {
 			for (String fieldName : failedFields.get(componentId)) {
 				boolean cached = analyzedFailureCache.containsKey(componentId)
 						&& analyzedFailureCache.get(componentId).contains(fieldName);
@@ -202,10 +210,18 @@ public class CorrelationManager implements MAPEAdaptation {
 					return true;
 				}
 			}
+		}*/
+		
+		for(Component component : componentManager.getComponents()){
+			Set<String> failedKnowledge = component.getFaultyKnowledge();
+			if(!failedKnowledge.isEmpty()
+					&& (!handledFailures.containsKey(component)
+							|| !handledFailures.get(component).containsAll(failedKnowledge))){
+				analyzedFailures.put(component, failedKnowledge); // TODO: check the condition
+			}
 		}
 		
-		// Don't run the correlation mechanism if all failures are cached
-		return false;
+		return !analyzedFailures.isEmpty();
 	}
 
 	/**
@@ -244,26 +260,79 @@ public class CorrelationManager implements MAPEAdaptation {
 			System.out.println("Correlation ensembles management process started...");
 		}
 
-		for(LabelPair labels : distanceBounds.keySet()){
+		for(Component component : analyzedFailures.keySet()){
+			for(String faultyKnowledge : analyzedFailures.get(component)){
+				for(LabelPair labels : distanceBounds.keySet()){
+					final String correlationFilter = labels.getFirstLabel();
+					final String correlationSubject = labels.getSecondLabel();
+					final BoundaryValueHolder distance = distanceBounds.get(labels);
+					
+					if(!correlationSubject.equals(faultyKnowledge)){
+						// Consider only faulty knowledge
+						continue;
+					}
+					
+					final String connectorName = correlationFilter + "_" + correlationSubject;
+					if (!distance.isValid()) {
+						if(verbose){
+							System.out.println(String.format("Undeploying ensemble %s",	connectorName));
+						}
+						// Undeploy the ensemble if the meta-adaptation is stopped or the correlation between the data is not reliable
+						connectorManager.addConnector(null, new MediatedKnowledge(
+								correlationFilter, correlationSubject));
+						// TODO: add ports
+					} else if (distance.hasChanged()) {
+						// Re-deploy the ensemble only if the distance has changed since the last time and if it is valid						
+						if(verbose){
+							System.out.println(String.format("Deploying ensemble %s", connectorName));
+						}
+						connectorManager.addConnector(
+								new Predicate<Map<String, Object>>(){
+
+									@Override
+									public boolean test(Map<String, Object> params) {
+										Object memberFilter = params.get(MEMBER_FILTER_FIELD);
+										Object coordFilter = params.get(COORD_FILTER_FIELD);
+										
+										return KnowledgeMetadataHolder.distance(correlationFilter, memberFilter, coordFilter) < distance.getBoundary();
+									}
+									
+								},
+								new MediatedKnowledge(correlationFilter, correlationSubject));
+						// TODO: add ports							
+					
+						// Mark the boundary as !hasChanged since the new value is used
+						distanceBounds.get(labels).boundaryUsed();
+					} else if(verbose){
+						System.out.println(String.format(
+								"Omitting deployment of ensemble %s since the bound hasn't changed (much).", connectorName));
+					}
+				}
+			}
+		}
+		
+		/*for(LabelPair labels : distanceBounds.keySet()){
 			String correlationFilter = labels.getFirstLabel();
 			String correlationSubject = labels.getSecondLabel();
 			BoundaryValueHolder distance = distanceBounds.get(labels);
-			String ensembleName = ensembleFactory.getHelper()
-					.composeClassName(correlationFilter, correlationSubject);
+			
 			try {
 				if (!distance.isValid()) {
 					if(verbose){
-						System.out.println(String.format("Undeploying ensemble %s",	ensembleName));
+						System.out.println(String.format("Undeploying ensemble %s",	correlationFilter + "_" + correlationSubject));
 					}
 					// Undeploy the ensemble if the meta-adaptation is stopped or the correlation between the data is not reliable
-					ensembleManager.removeEnsemble(ensembleName);
+					// TODO: undeploy
 				} else if (distance.hasChanged()) {
 					// Re-deploy the ensemble only if the distance has changed since the last time and if it is valid
+					
 					Class<?> ensemble = ensembleFactory.setEnsembleMembershipBoundary(correlationFilter, correlationSubject, distance.getBoundary());
 					ensembleFactory.getHelper().bufferEnsembleDefinition(ensembleName, ensemble);
+					
 					if(verbose){
-						System.out.println(String.format("Deploying ensemble %s", ensembleName));
+						System.out.println(String.format("Deploying ensemble %s", correlationFilter + "_" + correlationSubject));
 					}
+					
 					// Deploy the ensemble if the correlation is reliable enough and the meta-adaptation is running
 					ensembleManager.removeEnsemble(ensemble.getName());
 					// TODO: deploy only on broken nodes
@@ -288,7 +357,7 @@ public class CorrelationManager implements MAPEAdaptation {
 			for (String componentId : failedFields.keySet()) {
 				analyzedFailureCache.put(componentId, failedFields.get(componentId));
 			}
-		}
+		}*/
 	}
 	
 	/**
@@ -296,7 +365,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * together with components that contains the failed fields.
 	 * @return Mapping of components to failed fields.
 	 */
-	private Map<String, List<String>> getFailedFields(){
+	/*private Map<String, List<String>> getFailedFields(){
 		Map<String, List<String>> result = new HashMap<>();
 		for (String componentId : knowledgeHistoryOfAllComponents.keySet()) {
 			List<String> failedFields = new ArrayList<>();
@@ -321,7 +390,7 @@ public class CorrelationManager implements MAPEAdaptation {
 		}
 		
 		return result;
-	}
+	}*/
 
 	/**
 	 * Returns a list of all the pairs of labels that are common to both the specified components.
@@ -332,12 +401,12 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * All the pairs are inserted in both the possible ways [a,b] and [b,a].
 	 */
 	private List<LabelPair> getLabelPairs(
-			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
+			Map<Component, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
 			ComponentPair components){
 		List<LabelPair> labelPairs = new ArrayList<LabelPair>();
 
-		Set<String> c1Labels = history.get(components.component1Id).keySet();
-		Set<String> c2Labels = history.get(components.component2Id).keySet();
+		Set<String> c1Labels = history.get(components.component1).keySet();
+		Set<String> c2Labels = history.get(components.component2).keySet();
 
 		// For all the label pairs
 		for(String label1 : c1Labels){
@@ -363,7 +432,7 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @return The set of all label pairs available among all the components in the system.
 	 */
 	private Set<LabelPair> getAllLabelPairs(
-			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history){
+			Map<Component, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history){
 		Set<LabelPair> labelPairs = new HashSet<LabelPair>();
 
 		for(ComponentPair components : getComponentPairs(history.keySet()))
@@ -379,13 +448,13 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * components IDs. The ordering of the components in the pair doesn't matter,
 	 * therefore no two pairs with inverse ordering of the same two components
 	 * are returned. As well as no pair made of a single component is returned.
-	 * @param componentIds The set of components IDs.
+	 * @param components The set of components.
 	 * @return The list of pairs of components IDs.
 	 */
-	private List<ComponentPair> getComponentPairs(Set<String> componentIds){
+	private List<ComponentPair> getComponentPairs(Set<Component> components){
 		List<ComponentPair> componentPairs = new ArrayList<>();
 
-		String[] componentArr = componentIds.toArray(new String[0]);
+		Component[] componentArr = components.toArray(new Component[components.size()]);
 		for(int i = 0 ; i < componentArr.length; i++){
 			for(int j = i+1; j < componentArr.length; j++){
 				componentPairs.add(new ComponentPair(componentArr[i], componentArr[j]));
@@ -400,13 +469,13 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @param labels The pair knowledge fields required the components to have.
 	 * @return All the components containing the given pair of knowledge fields.
 	 */
-	private Set<String> getComponents(
-			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
+	private Set<Component> getComponents(
+			Map<Component, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
 			LabelPair labels){
 
-		Set<String> components = new HashSet<>(history.keySet());
+		Set<Component> components = new HashSet<>(history.keySet());
 
-		for(String component : history.keySet()){
+		for(Component component : history.keySet()){
 			if(!history.get(component).keySet().contains(labels.getFirstLabel())
 					|| !history.get(component).keySet().contains(labels.getSecondLabel())){
 				// If the component doesn't contain both the specified knowledge fields remove it
@@ -425,25 +494,25 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @return The list of knowledge values identified by given labels from given components.
 	 */
 	private List<KnowledgeQuadruple> extractKnowledgeHistory(
-			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
+			Map<Component, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
 			ComponentPair components,
 			LabelPair labels){
 
 		List<KnowledgeQuadruple> knowledgeVectors = new ArrayList<>();
 		List<CorrelationMetadataWrapper<? extends Object>> c1Values1 = new ArrayList<>(
-				history.get(components.component1Id).get(labels.getFirstLabel()));
+				history.get(components.component1).get(labels.getFirstLabel()));
 		List<CorrelationMetadataWrapper<? extends Object>> c1Values2 = new ArrayList<>(
-				history.get(components.component1Id).get(labels.getSecondLabel()));
+				history.get(components.component1).get(labels.getSecondLabel()));
 		List<CorrelationMetadataWrapper<? extends Object>> c2Values1 = new ArrayList<>(
-				history.get(components.component2Id).get(labels.getFirstLabel()));
+				history.get(components.component2).get(labels.getFirstLabel()));
 		List<CorrelationMetadataWrapper<? extends Object>> c2Values2 = new ArrayList<>(
-				history.get(components.component2Id).get(labels.getSecondLabel()));
+				history.get(components.component2).get(labels.getSecondLabel()));
 
 		KnowledgeQuadruple values = getMinCommonTimeSlotValues(
 				c1Values1, c1Values2, c2Values1, c2Values2);
-		if(values == null){
+		if(values == null && verbose){
 			System.out.println(String.format("Correlation for [%s:%s]{%s -> %s} Skipped",
-					components.component1Id, components.component2Id,
+					components.component1, components.component2,
 					labels.getFirstLabel(), labels.getSecondLabel()));
 		}
 		long timeSlot = -1;
@@ -451,10 +520,12 @@ public class CorrelationManager implements MAPEAdaptation {
 			timeSlot = values.timeSlot;
 			knowledgeVectors.add(values);
 
-			System.out.println(String.format("Correlation for [%s:%s]{%s -> %s}(%d)",
-					components.component1Id, components.component2Id,
+			if(verbose){
+				System.out.println(String.format("Correlation for [%s:%s]{%s -> %s}(%d)",
+					components.component1, components.component2,
 					labels.getFirstLabel(), labels.getSecondLabel(), timeSlot));
-
+			}
+			
 			removeEarlierValuesForTimeSlot(c1Values1, timeSlot);
 			removeEarlierValuesForTimeSlot(c1Values2, timeSlot);
 			removeEarlierValuesForTimeSlot(c2Values1, timeSlot);
@@ -471,15 +542,15 @@ public class CorrelationManager implements MAPEAdaptation {
 	 * @return The matrix of distances and distance classes for given knowledge fields among all the components.
 	 */
 	private List<DistancePair> computeDistances(
-			Map<String, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
+			Map<Component, Map<String, List<CorrelationMetadataWrapper<? extends Object>>>> history,
 			LabelPair labels){
 
 		List<KnowledgeQuadruple> knowledgeVectors = new ArrayList<>();
 
-		Set<String> componentIds = getComponents(history, labels);
-		List<ComponentPair> componentPairs = getComponentPairs(componentIds);
-		for(ComponentPair components : componentPairs){
-			knowledgeVectors.addAll(extractKnowledgeHistory(history, components, labels));
+		Set<Component> components = getComponents(history, labels);
+		List<ComponentPair> componentPairs = getComponentPairs(components);
+		for(ComponentPair componentPair : componentPairs){
+			knowledgeVectors.addAll(extractKnowledgeHistory(history, componentPair, labels));
 		}
 
 		List<DistancePair> distancePairs = new ArrayList<>();
