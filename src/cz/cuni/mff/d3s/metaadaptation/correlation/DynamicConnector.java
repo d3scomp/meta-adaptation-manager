@@ -23,5 +23,5 @@ import java.util.Set;
  */
 public interface DynamicConnector {
 
-	public void addPort(Set<String> assumedKnowledge, Kind kind, ComponentPort componentPort);
+	public ConnectorPort addPort(Set<String> assumedKnowledge, Kind kind);
 }

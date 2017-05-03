@@ -1,6 +1,11 @@
 package cz.cuni.mff.d3s.metaadaptation.correlation;
 
+import static cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.COORD_FILTER_FIELD;
+import static cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.MEMBER_FILTER_FIELD;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,10 +17,7 @@ import java.util.function.Predicate;
 
 import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
 import cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.MediatedKnowledge;
-import cz.cuni.mff.d3s.metaadaptation.correlation.CorrelationLevel.DistanceClass;
-
-import static cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.MEMBER_FILTER_FIELD;
-import static cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.COORD_FILTER_FIELD;;
+import cz.cuni.mff.d3s.metaadaptation.correlation.CorrelationLevel.DistanceClass;;
 
 public class CorrelationManager implements MAPEAdaptation {
 
@@ -45,7 +47,6 @@ public class CorrelationManager implements MAPEAdaptation {
 	/**
 	 * Caches the failures that has been already analyzed, to save time.
 	 */
-	//private final Map<Component, List<ComponentPort>> analyzedFailureCache;
 	private final Map<Component, Set<String>> analyzedFailures;
 	
 	private final Map<Component, Set<String>> handledFailures;
@@ -79,7 +80,6 @@ public class CorrelationManager implements MAPEAdaptation {
 		}
 		
 		knowledgeHistoryOfAllComponents = new HashMap<>();
-		//analyzedFailureCache = new HashMap<>();
 		analyzedFailures = new HashMap<>();
 		handledFailures = new HashMap<>();
 		distanceBounds = new HashMap<>();
@@ -195,23 +195,6 @@ public class CorrelationManager implements MAPEAdaptation {
 	 */
 	@Override
 	public boolean analyze() {
-		/*Map<String, List<String>> failedFields = getFailedFields();
-		if(failedFields.isEmpty()){
-			// If no failure found, don't run the correlation mechanism
-			return false;
-		}*/
-		
-		/*for (String componentId : failedFields.keySet()) {
-			for (String fieldName : failedFields.get(componentId)) {
-				boolean cached = analyzedFailureCache.containsKey(componentId)
-						&& analyzedFailureCache.get(componentId).contains(fieldName);
-				if(!cached){
-					// If the failure is not yet cached, run the correlation mechanism
-					return true;
-				}
-			}
-		}*/
-		
 		for(Component component : componentManager.getComponents()){
 			Set<String> failedKnowledge = component.getFaultyKnowledge();
 			if(!failedKnowledge.isEmpty()
@@ -280,13 +263,12 @@ public class CorrelationManager implements MAPEAdaptation {
 						// Undeploy the ensemble if the meta-adaptation is stopped or the correlation between the data is not reliable
 						connectorManager.addConnector(null, new MediatedKnowledge(
 								correlationFilter, correlationSubject));
-						// TODO: add ports
 					} else if (distance.hasChanged()) {
 						// Re-deploy the ensemble only if the distance has changed since the last time and if it is valid						
 						if(verbose){
 							System.out.println(String.format("Deploying ensemble %s", connectorName));
 						}
-						connectorManager.addConnector(
+						DynamicConnector connector = connectorManager.addConnector(
 								new Predicate<Map<String, Object>>(){
 
 									@Override
@@ -299,7 +281,19 @@ public class CorrelationManager implements MAPEAdaptation {
 									
 								},
 								new MediatedKnowledge(correlationFilter, correlationSubject));
-						// TODO: add ports							
+						// Add ports
+						Set<String> connectorKnowledge = new HashSet<String>(Arrays.asList(
+								new String[]{correlationFilter, correlationSubject}));
+						connector.addPort(connectorKnowledge, Kind.Comsumer);
+						connector.addPort(connectorKnowledge, Kind.Producer);
+						component.addPort(connectorKnowledge);
+						for(Component otherComponent : componentManager.getComponents()){
+							if(otherComponent.equals(component)){
+								// Consider only other components than the failed one
+								continue;
+							}
+							otherComponent.addPort(connectorKnowledge);
+						}
 					
 						// Mark the boundary as !hasChanged since the new value is used
 						distanceBounds.get(labels).boundaryUsed();
@@ -310,87 +304,7 @@ public class CorrelationManager implements MAPEAdaptation {
 				}
 			}
 		}
-		
-		/*for(LabelPair labels : distanceBounds.keySet()){
-			String correlationFilter = labels.getFirstLabel();
-			String correlationSubject = labels.getSecondLabel();
-			BoundaryValueHolder distance = distanceBounds.get(labels);
-			
-			try {
-				if (!distance.isValid()) {
-					if(verbose){
-						System.out.println(String.format("Undeploying ensemble %s",	correlationFilter + "_" + correlationSubject));
-					}
-					// Undeploy the ensemble if the meta-adaptation is stopped or the correlation between the data is not reliable
-					// TODO: undeploy
-				} else if (distance.hasChanged()) {
-					// Re-deploy the ensemble only if the distance has changed since the last time and if it is valid
-					
-					Class<?> ensemble = ensembleFactory.setEnsembleMembershipBoundary(correlationFilter, correlationSubject, distance.getBoundary());
-					ensembleFactory.getHelper().bufferEnsembleDefinition(ensembleName, ensemble);
-					
-					if(verbose){
-						System.out.println(String.format("Deploying ensemble %s", correlationFilter + "_" + correlationSubject));
-					}
-					
-					// Deploy the ensemble if the correlation is reliable enough and the meta-adaptation is running
-					ensembleManager.removeEnsemble(ensemble.getName());
-					// TODO: deploy only on broken nodes
-					ensembleManager.addEnsemble(ensemble);
-					// Mark the boundary as !hasChanged since the new value is used
-					distanceBounds.get(labels).boundaryUsed();
-				} else if(verbose){
-					System.out.println(String.format(
-							"Omitting deployment of ensemble %s since the bound hasn't changed (much).",
-							ensembleName));
-				}
-			} catch(Exception e) {
-				System.out.println(e.getMessage());
-				e.printStackTrace();
-			}
-		}
-		
-		// Cache the failures that has been taken care of
-		Map<String, List<String>> failedFields = getFailedFields();
-		if(!failedFields.isEmpty()){
-			// Cache if any failure found
-			for (String componentId : failedFields.keySet()) {
-				analyzedFailureCache.put(componentId, failedFields.get(componentId));
-			}
-		}*/
 	}
-	
-	/**
-	 * Returns all the fields that are not operational,
-	 * together with components that contains the failed fields.
-	 * @return Mapping of components to failed fields.
-	 */
-	/*private Map<String, List<String>> getFailedFields(){
-		Map<String, List<String>> result = new HashMap<>();
-		for (String componentId : knowledgeHistoryOfAllComponents.keySet()) {
-			List<String> failedFields = new ArrayList<>();
-			
-			final Map<String, List<CorrelationMetadataWrapper<?>>> componentFields = 
-					knowledgeHistoryOfAllComponents.get(componentId);
-			for (String fieldName : componentFields.keySet()) {
-				final List<CorrelationMetadataWrapper<?>> fieldHistory =
-						componentFields.get(fieldName);
-				if (!fieldHistory.isEmpty()) {
-					// If any sensor is not operational than the adaptation is relevant
-					boolean fieldOperational = fieldHistory.get(fieldHistory.size() - 1).isOperational();
-					if(!fieldOperational){
-						failedFields.add(fieldName);
-					}
-				}
-			}
-			
-			if(!failedFields.isEmpty()){
-				result.put(componentId, failedFields);
-			}
-		}
-		
-		return result;
-	}*/
 
 	/**
 	 * Returns a list of all the pairs of labels that are common to both the specified components.
