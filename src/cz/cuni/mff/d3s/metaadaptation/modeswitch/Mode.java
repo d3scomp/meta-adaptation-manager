@@ -15,37 +15,9 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 
-import java.util.Set;
-
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
 public interface Mode {
-//	public String getId();
-//
-//	/**
-//	 * Indicate whether it is safe to non-deterministically enter the mode.
-//	 * 
-//	 * @return True if its safe to enter the mode non-deterministically.
-//	 * 	False otherwise.
-//	 */
-//	boolean nonDeterministicIn();
-//
-//	/**
-//	 * Indicate whether it is safe to non-deterministically leave the mode.
-//	 * 
-//	 * @return True if its safe to leave the mode non-deterministically.
-//	 * 	False otherwise.
-//	 */
-//	boolean nonDeterministicOut();
-//	
-//	/**
-//	 * Indicates whether is the fitness computed while the component
-//	 * is in this mode.
-//	 * 
-//	 * @return True if the fitness is computed while the component
-//	 * is in this mode. False otherwise.
-//	 */
-//	boolean isFitnessComputed();
 }

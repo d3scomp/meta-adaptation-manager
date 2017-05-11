@@ -15,9 +15,7 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,66 +32,32 @@ import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
  */
 public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 
-//	public static final double DEFAULT_ENERGY = 1;
-
-//	public static double startingNondeterminism = NonDetModeSwitchAnnealStateSpace.DEFAULT_STARTING_NONDETERMINISM;
-	
 	private boolean verbose = false;
 	
 	private double transitionProbability = 0.01;
 	
 	private int transitionPriority = 10;
 	
-	private boolean training = false;
+	private List<Transition> trainTransitions;
 	
-	// TODO: make list of training transitions
-	public static Mode trainFrom = null;
+	private List<Transition> plannedTransitions;
 	
-	public static Mode trainTo = null;
-	
-	public static Mode trainFrom2 = null;
-	
-	public static Mode trainTo2 = null;
-	
-//	public static File trainingOutput = null;
-	
-	
-	private final List<Component> components;
+	private final ComponentManager componentManager;
 
 	private Map<Transition, Double> utility = null;
 	
-//	private PrintWriter writer;
-	
 	private boolean initialized;
-
-	private Mode plannedFrom;
-	
-	private Mode plannedTo;
-	
-//	private Transition addedTransition = null;
-	
-//	private double measuredUtility = 0;
-	
-		
-//	public NonDetModeSwitchAnnealStateSpace stateSpace;
-//		
-//	public final long startTime;
-//	
-//	private final TimeProgress timer;
-//
-//	public Double currentNonDeterminismLevel;
-//	public Double nextNonDeterminismLevel;
 	
 	
-	public NonDeterministicModeSwitchingManager(List<Component> components, Map<Transition, Double> utility)
-					throws InstantiationException, IllegalAccessException, FileNotFoundException {
-		if(components == null){
+	public NonDeterministicModeSwitchingManager(ComponentManager componentManager, Map<Transition, Double> utility){
+		if(componentManager == null){
 			throw new IllegalArgumentException(String.format(
-					"The %s parameter is null.", "components"));
+					"The %s parameter is null.", "componentManager"));
 		}
+		this.componentManager = componentManager;
 		
-		// Check whether given components aree valid
-		for(Component component : components){
+		// Check whether given components are valid
+		for(Component component : componentManager.getComponents()){
 			if(!isValidComponent(component)){
 				throw new IllegalArgumentException(String.format(
 						"Non-deterministic mode switching cannot be applied "
@@ -103,25 +67,6 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 			}
 		}
 		
-		// Check whether the configuration of this meta-adaptation manager is correct
-		if(training){
-			if(trainFrom == null || trainTo == null){
-				throw new IllegalStateException(String.format("The %s has to be set in the %s mode",
-						"trainTransition", "training"));
-			}
-			/*if(trainingOutput == null){
-				throw new IllegalStateException(String.format("The %s has to be set in the %s mode",
-						"trainingOutput", "training"));
-			}*/
-		}
-		
-//		this.startTime = startTime;
-//		stateSpace = new NonDetModeSwitchAnnealStateSpace(startingNondeterminism);
-//		this.timer = timer;
-		
-		
-		
-		this.components = components;
 		if(utility != null){
 			this.utility = utility;
 			for(Transition t : utility.keySet()){
@@ -131,10 +76,9 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 			this.utility = new HashMap<>();
 		}
 		
+		trainTransitions = new ArrayList<>();
+		plannedTransitions = new ArrayList<>();
 		initialized = false;
-//		writer = new PrintWriter(trainingOutput);
-		
-//		currentNonDeterminismLevel = startingNondeterminism;
 	}
 	
 
@@ -150,22 +94,14 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 		transitionPriority = priority;
 	}
 	
-	public void setTraining(boolean training){
-		this.training = training;
+	public void setTrainTransitions(List<Transition> trainTransitions){
+		this.trainTransitions.clear();
+		this.trainTransitions.addAll(trainTransitions);
 	}
 	
 	private boolean isValidComponent(Component component) {
 		ModeChart modeChart = component.getModeChart();
 		return modeChart != null;
-		
-//		StateSpaceSearch sss = component.getStateSpaceSearch();
-//		return sss != null;
-	}
-	
-	public void terminate(){
-		/*if(training){
-			writer.close();
-		}*/
 	}
 
 	/* (non-Javadoc)
@@ -173,24 +109,13 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void monitor() {
-		/*if(training && trainingInitialized){
-			for(Component component : components){
-				double u = component.getType().getUtility();
-				writer.println(String.format("%f", u));
-			}
-			
-			return;
-		}*/
-		
-		if(training && !initialized && verbose){
-			for(Component component : components){
+		if(!trainTransitions.isEmpty() && !initialized && verbose){
+			for(Component component : componentManager.getComponents()){
 				printMissingTransitions(component.getModeChart());
 			}
 		}
 		
-		/*if(!components.isEmpty()){
-			measuredUtility = components.get(0).getType().getUtility();
-		}*/
+		// TODO: record utility
 	}
 
 	/* (non-Javadoc)
@@ -198,19 +123,8 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	 */
 	@Override
 	public boolean analyze() {
+		// TODO: analyze utility
 		return !initialized;
-		/*if(training && !initialized){
-			return true;
-		}
-		if(training){
-			return false;
-		}*/
-		
-		/*if(!components.isEmpty()){
-			return measuredUtility > components.get(0).getType().getUtilityThreshold();
-		}*/
-		
-		//return false;
 	}
 
 	/* (non-Javadoc)
@@ -218,11 +132,13 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void plan() {
-		//if(training) {
-			plannedFrom = trainFrom;
-			plannedTo = trainTo;
-			return;
-		//}
+		plannedTransitions.clear();
+		
+		if(!trainTransitions.isEmpty()) {
+			plannedTransitions.addAll(trainTransitions);
+		} else {
+			// TODO: choose transition based on the utility
+		}
 		
 		/*Transition bestTransition = null;
 		double minUtility = Double.MAX_VALUE;
@@ -246,138 +162,25 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void execute() {
-		/*if(plannedFrom != null && plannedTo != null && addedTransition != null){
-			
-		}*/
-		
-		if(plannedFrom == null || plannedTo == null){
+		if(plannedTransitions.isEmpty()){
 			return;
 		}
 		
-		for(Component component : components){
-			Transition addedTransition = component.getModeChart().addTransition(plannedFrom,
-					plannedTo, new ProbabilisticGuard(transitionProbability));
-			addedTransition.setPriority(transitionPriority);
-			if(trainFrom2 != null && trainTo2 != null){
-
-				addedTransition = component.getModeChart().addTransition(trainFrom2,
-						trainTo2, new ProbabilisticGuard(transitionProbability));
+		for(Component component : componentManager.getComponents()){
+			for(Transition plannedTransition : plannedTransitions){
+				Transition addedTransition = component.getModeChart().addTransition(
+						plannedTransition.getFrom(), plannedTransition.getTo(),
+						new ProbabilisticGuard(transitionProbability));
 				addedTransition.setPriority(transitionPriority);
+				
 				if(verbose){
-					System.out.println(String.format("The transition from2 %s to2 %s added.",
-							trainFrom2, trainTo2));
+					System.out.println(String.format("The transition %s added.",
+							addedTransition));
 				}
 			}
 		}
 		initialized = true;
-				
-		if(verbose){
-			System.out.println(String.format("The transition from %s to %s added.",
-					plannedFrom, plannedTo));
-		}
-		
-		/*ModeChart modeChart = managedComponent.getModeChart();
-		if(!modeChart.isModified()){
-			// Modify the mode chart if not yet modified
-			addNondeterministicTransitions();
-		}
-
-		reconfigureModeChart(nextNonDeterminismLevel);
-		currentNonDeterminismLevel = nextNonDeterminismLevel;
-		// Restart the evaluator for next measurements with new probabilities
-		managedComponent.restartUtility();
-
-		// Notify that the probability has changed
-		managedComponent.nonDeterminismLevelChanged(currentNonDeterminismLevel);
-		
-		if(verbose) {
-			long currentTime = timer.getTime();
-			String id = managedComponent.getId();
-			System.out.println(String.format("Non-deterministic mode switching the "
-				+ "non-deterministic level of component %s set to %f at %d",
-				id, currentNonDeterminismLevel, currentTime));
-		}*/
-		
 	}
-	
-	/*private void reconfigureModeChart(double nondeterminism){
-		ModeChart modeChart = managedComponent.getModeChart();
-		
-		Map<Mode, Set<Transition>> dynamicTransitions = new HashMap<>();
-		Map<Mode, Set<Transition>> staticTransitions = new HashMap<>();
-		
-		// Sort out dynamic and static transitions
-		for(Transition transition : modeChart.getTransitions()){
-			Mode mode = transition.getFrom();
-			if(!dynamicTransitions.containsKey(mode)){
-				dynamicTransitions.put(mode, new HashSet<>());
-			}
-			if(!staticTransitions.containsKey(mode)){
-				staticTransitions.put(mode, new HashSet<>());
-			}
-			
-			if(transition.isDynamic()){
-				dynamicTransitions.get(mode).add(transition);
-			} else {
-				staticTransitions.get(mode).add(transition);
-			}			
-		}
-
-		// Set probability to dynamic transitions
-		for(Mode mode : dynamicTransitions.keySet()){
-			int dynamicTransitionsCnt = dynamicTransitions.get(mode).size();
-			for(Transition transition : dynamicTransitions.get(mode)){
-				// +1 for one static transition (suppose they are exclusive
-				transition.setProbability(nondeterminism / (dynamicTransitionsCnt + 1));
-			}
-		}
-
-		// Suppose all static transitions are exclusive
-		for(Mode mode : staticTransitions.keySet()){
-			for(Transition transition : staticTransitions.get(mode)){
-				transition.setProbability(1- nondeterminism);
-			}
-		}
-	}*/
-	
-	/*private void addNondeterministicTransitions(){
-		ModeChart modeChart = managedComponent.getModeChart();
-		
-		// Make full graph
-		for(Mode from : modeChart.getModes())
-		{
-			// Don't add new outward transitions if the mode doesn't allow it
-			if(!from.nonDeterministicOut()){
-				continue;
-			}
-			
-			// Identify missing transitions
-			Set<Mode> allModes = modeChart.getModes();
-			Set<Mode> missingModes = new HashSet<>(allModes);
-			Set<Transition> fromModeTransitions = getTransitionsFrom(from);
-			missingModes.removeAll(getTargetModes(fromModeTransitions));
-			
-			// Add missing transitions
-			for(Mode to : missingModes){
-				// Don't add new inward transitions if the mode doesn't allow it
-				if(!to.nonDeterministicIn()){
-					continue;
-				}
-								
-				Transition transition = modeChart.createTransition(from, to, new TrueGuard());
-				transition.setDynamic(true);
-				
-				if(modeChart.getTransitions().contains(transition)){
-					throw new IllegalStateException(
-							String.format("Transition \"%s\" -> \"%s\" already defined.",
-							from, to));
-				}
-				modeChart.addTransition(transition);
-			}
-		}
-
-		modeChart.setModified();
-	}*/
 	
 	public void printMissingTransitions(ModeChart modeChart){
 		Set<Mode> modes = modeChart.getModes();
@@ -404,25 +207,4 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 		}
 	}
 	
-	/*private Set<Transition> getTransitionsFrom(Mode mode, ModeChart modeChart){
-		Set<Transition> allTransitions = modeChart.getTransitions();
-		Set<Transition> fromModeTransitions = new HashSet<>();
-		
-		for(Transition transition : allTransitions){
-			if(transition.getFrom().equals(mode)){
-				fromModeTransitions.add(transition);
-			}
-		}
-		
-		return fromModeTransitions;
-	}
-	
-	private Set<Mode> getTargetModes(Set<Transition> transitions){
-		Set<Mode> modes = new HashSet<>();
-		for(Transition transition : transitions){
-			modes.add(transition.getTo());
-		}
-		
-		return modes;
-	}*/
 }

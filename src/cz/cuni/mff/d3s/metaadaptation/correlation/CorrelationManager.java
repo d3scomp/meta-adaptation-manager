@@ -5,7 +5,6 @@ import static cz.cuni.mff.d3s.metaadaptation.correlation.ConnectorManager.MEMBER
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;

@@ -15,11 +15,12 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 
+import java.util.Set;
+
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface ComponentType {
-	public double getAverageUtility();
-	public double getUtilityThreshold();
+public interface ComponentManager {
+	public Set<Component> getComponents();
 }

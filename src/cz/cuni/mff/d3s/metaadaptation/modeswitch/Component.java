@@ -15,22 +15,12 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitch;
 
-import cz.cuni.mff.d3s.metaadaptation.search.StateSpaceSearch;
-
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
 public interface Component {
-
-	//public String getId();
-	public ModeChart getModeChart();
-	//public StateSpaceSearch getStateSpaceSearch();
-	
-	// Callbacks
-	//public void nonDeterminismLevelChanged(double probability);
-	
 	public ComponentType getType();
-	
-	
+	public double getUtility();
+	public ModeChart getModeChart();
 }

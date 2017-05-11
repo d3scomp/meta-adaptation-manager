@@ -28,7 +28,4 @@ public interface ModeChart {
 	public Set<Transition> getTransitions();
 	public Transition addTransition(Mode from, Mode to, Predicate<Void> guard);
 	public void removeTransition(Transition transition);
-	//public Transition createTransition(Mode from, Mode to, Guard guard);
-	//public boolean isModified();
-	//public void setModified();
 }
