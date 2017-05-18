@@ -15,10 +15,8 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitchprops;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 
 import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
 
@@ -28,54 +26,52 @@ import cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation;
  */
 public class ModeSwitchPropsManager implements MAPEAdaptation {
 	
-	public static boolean verbose = false;
-	
-	public static boolean training = false;
-	
-	public static String trainProperty = null;
+	private boolean verbose = false;
 
-	public static double trainValue = 0.0;
+	private final List<PropertyValue> trainProperties;
 	
-	public static String trainProperty2 = null;
-
-	public static double trainValue2 = 0.0;
+	private final List<PropertyValue> plannedProperties;
 	
-	private final List<Component> components;
+	private final ComponentManager componentManager;
 	
 	private boolean initialized;
 	
-	/*public static double step = 0.1;
 	
-	private final Component component;
-	private final ModeChart modeChart;
-	
-	private final Random random;
-	
-	private double utility;
-	private double lastUtility;
-	private Transition transition;
-	private boolean increase;
-	private String propertyName;*/
-	
-	public ModeSwitchPropsManager(List<Component> components) {
-		if(components == null){
-			throw new IllegalArgumentException(String.format("The %s argument is null.", components));
+	public ModeSwitchPropsManager(ComponentManager componentManager) {
+		if(componentManager == null){
+			throw new IllegalArgumentException(String.format("The %s argument is null.", componentManager));
 		}
-		/*if(modeChart == null){
-			throw new IllegalArgumentException(String.format("The %s argument is null.", modeChart));
-		}*/
 		
-		this.components = components;
+		this.componentManager = componentManager;
+		
+		// Check whether given components are valid
+		for(Component component : componentManager.getComponents()){
+			if(!isValidComponent(component)){
+				throw new IllegalArgumentException(String.format(
+						"Mode switching property adjustment cannot be applied "
+						+ "to the given component %s, it doesn't specify "
+						+ "either mode chart.",
+						component.getClass().getName()));
+			}
+		}
+		
+		trainProperties = new ArrayList<>();
+		plannedProperties = new ArrayList<>();
 		initialized = false;
-		//this.modeChart = modeChart;
-		
-		/*random = new Random();
-		
-		utility = 0;
-		lastUtility = 0;
-		transition = null;
-		increase = false;
-		propertyName = null;*/
+	}
+	
+	public void setVerbosity(boolean verbosity){
+		verbose = verbosity;
+	}
+	
+	public void setTrainProperties(List<PropertyValue> trainProperties){
+		this.trainProperties.clear();
+		this.trainProperties.addAll(trainProperties);
+	}
+
+	private boolean isValidComponent(Component component) {
+		ModeChart modeChart = component.getModeChart();
+		return modeChart != null;
 	}
 	
 	/* (non-Javadoc)
@@ -83,8 +79,14 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void monitor() {
-		//utility = component.getUtility();
+		if(!trainProperties.isEmpty() && !initialized && verbose){
+			for(PropertyValue property : trainProperties){
+				System.out.println(String.format("Training property: %s = %f",
+						property.property, property.value));
+			}
+		}
 		
+		// TODO: record utility	
 	}
 
 	/* (non-Javadoc)
@@ -92,10 +94,8 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 	 */
 	@Override
 	public boolean analyze() {
-
+		// TODO: analyze utility
 		return !initialized;
-		//lastUtility = utility;
-		//return utility < component.getUtilityThreshold();
 	}
 
 	/* (non-Javadoc)
@@ -103,111 +103,41 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 	 */
 	@Override
 	public void plan() {
-		/*if(transition == null){
-			// Plan the first change made by this mechanism
-			transition = getRandomTransition();
-			increase = random.nextBoolean();
-			propertyName = getRandomProperty(transition);
-			if(propertyName == null){
-				// If a transition without tunable parameter was selected take no action
-				reset();
-			}
-			// Otherwise everything is planned
-			return;*
+		plannedProperties.clear();
+		
+		if(!trainProperties.isEmpty()) {
+			plannedProperties.addAll(trainProperties);
+		} else {
+			// TODO: choose property based on the utility
 		}
-		
-		if(utility < lastUtility){
-			// If the utility decreased after the last change - roll back the last change
-			increase = !increase;
-			return;
-		}
-		
-		// Utility improved
-		// With 50% chance continue improving otherwise select new transition to modify
-		if(random.nextBoolean()){
-			// Select a new transition to modify
-			transition = getRandomTransition();
-			increase = random.nextBoolean();
-			propertyName = getRandomProperty(transition);
-			if(propertyName == null){
-				// If a transition without tunable parameter was selected take no action
-				reset();
-			}
-		}*/
-		
-		// Continue the same improvement as done the lase time
 	}
-	
-	/*private Transition getRandomTransition(){
-		Set<Transition> transitions = modeChart.getTransitions();
-		int target = random.nextInt(transitions.size());
-		Transition[] transitionArray = transitions.toArray(new Transition[]{});
-		
-		return transitionArray[target];
-	}
-	
-	private String getRandomProperty(Transition transition){		
-		Map<String, Double> properties = transition.getGuardParams();
-
-		if(properties.isEmpty()){
-			return null;
-		}
-			
-		Set<String> propNames = properties.keySet();		
-		int target = random.nextInt(propNames.size());
-		String[] namesArray = propNames.toArray(new String[]{});
-		
-		return namesArray[target];
-	}*/
-	
-	/*private void reset(){
-		transition = null;
-		increase = false;
-		propertyName = null;
-	}*/
 
 	/* (non-Javadoc)
 	 * @see cz.cuni.mff.d3s.metaadaptation.MAPEAdaptation#execute()
 	 */
 	@Override
 	public void execute() {
-		if(trainProperty == null){
+		if(plannedProperties.isEmpty()){
 			return;
 		}
 		
-		for(Component component : components){
+		for(Component component : componentManager.getComponents()){
 			for(Transition transition : component.getModeChart().getTransitions()){
 				for(String property : transition.getGuardParams().keySet()){
-					if(property.equals(trainProperty)){
-						transition.setGuardParam(property, trainValue);
-						if(verbose){
-							System.out.println(String.format(
+					for(PropertyValue plannedProperty : plannedProperties){
+						if(property.equals(plannedProperty)){
+							transition.setGuardParam(property, plannedProperty.value);
+							if(verbose){
+								System.out.println(String.format(
 									"The guard property %s in %s in %s set to %f.",
-									property, transition, component, trainValue));
-						}
-					}
-					if(trainProperty2 != null && property.equals(trainProperty2)){
-						transition.setGuardParam(property, trainValue2);
-						if(verbose){
-							System.out.println(String.format(
-									"The guard property %s in %s in %s set to %f.",
-									property, transition, component, trainValue2));
+									property, transition, component, plannedProperty.value));
+							}
 						}
 					}
 				}
 			}
 		}
 		initialized = true;
-		
-		/*if(transition != null && propertyName != null){
-			double value = transition.getGuardParams().get(propertyName);
-			if(increase){
-				value += step;
-			} else {
-				value -= step;
-			}
-			transition.setGuardParam(propertyName, value);
-		}*/		
 	}
 
 }

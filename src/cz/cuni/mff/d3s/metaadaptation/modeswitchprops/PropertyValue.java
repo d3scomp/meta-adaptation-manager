@@ -15,14 +15,17 @@
  *******************************************************************************/
 package cz.cuni.mff.d3s.metaadaptation.modeswitchprops;
 
-import java.util.Set;
-
 /**
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface ModeChart {
-	public Set<Mode> getModes();
-	public Mode getCurrentMode();
-	public Set<Transition> getTransitions();
+
+public class PropertyValue {
+	public final String property;
+	public final double value;
+	
+	public PropertyValue(String property, double value){
+		this.property = property;
+		this.value = value;
+	}
 }

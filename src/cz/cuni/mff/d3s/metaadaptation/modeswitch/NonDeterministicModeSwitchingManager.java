@@ -38,9 +38,9 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	
 	private int transitionPriority = 10;
 	
-	private List<Transition> trainTransitions;
+	private final List<Transition> trainTransitions;
 	
-	private List<Transition> plannedTransitions;
+	private final List<Transition> plannedTransitions;
 	
 	private final ComponentManager componentManager;
 
@@ -62,7 +62,7 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 				throw new IllegalArgumentException(String.format(
 						"Non-deterministic mode switching cannot be applied "
 						+ "to the given component %s, it doesn't specify "
-						+ "either mode chart or state space search.",
+						+ "either mode chart.",
 						component.getClass().getName()));
 			}
 		}

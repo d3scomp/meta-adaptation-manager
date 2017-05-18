@@ -20,5 +20,4 @@ package cz.cuni.mff.d3s.metaadaptation.modeswitchprops;
  *
  */
 public interface Mode {
-
 }

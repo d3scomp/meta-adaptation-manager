@@ -21,8 +21,6 @@ import java.util.Set;
  * @author Dominik Skoda <skoda@d3s.mff.cuni.cz>
  *
  */
-public interface ModeChart {
-	public Set<Mode> getModes();
-	public Mode getCurrentMode();
-	public Set<Transition> getTransitions();
+public interface ComponentManager {
+	public Set<Component> getComponents();
 }
