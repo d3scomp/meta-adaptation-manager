@@ -164,6 +164,10 @@ public class CorrelationManager implements MAPEAdaptation {
 				// ignore fields that are not specified as CorrelationMetadataWrapper instances
 				if (o instanceof CorrelationMetadataWrapper) {
 					addFieldToHistory(memberKnowledgeHistory, (CorrelationMetadataWrapper<?>) o);
+				} else if(dumpValues){
+					System.out.println(String.format(
+							"Correlation manager is ignoring the field \"%s\" because it is not an instance of \"%s\"",
+							knowlegeField, CorrelationMetadataWrapper.class.getName()));
 				}
 			}
 		}
@@ -480,7 +484,9 @@ public class CorrelationManager implements MAPEAdaptation {
 						labels.getSecondLabel(),
 						knowledge.c1Value2.getValue(),
 						knowledge.c2Value2.getValue());
-				distancePairs.add(new DistancePair(distance, distanceClass, knowledge.c1Value1.getTimestamp()));
+				if(!Double.isNaN(distance) && distanceClass != DistanceClass.Undefined) {
+					distancePairs.add(new DistancePair(distance, distanceClass, knowledge.c1Value1.getTimestamp()));
+				}
 			}
 		}
 

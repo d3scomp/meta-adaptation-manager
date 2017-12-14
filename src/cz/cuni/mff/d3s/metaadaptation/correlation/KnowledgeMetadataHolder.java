@@ -170,8 +170,12 @@ public class KnowledgeMetadataHolder {
 		if(containsLabel(label)){
 			Metric metric = getMetric(label);
 			double bound = getBound(label);
+			double distance = metric.distance(value1, value2);
 			
-			if(metric.distance(value1, value2) <= bound){
+			if(Double.isNaN(distance)) {
+				return DistanceClass.Undefined;
+			}
+			if(distance <= bound){
 				return DistanceClass.Close;
 			}
 			else{

@@ -40,9 +40,18 @@ public class CorrelationMetadataWrapper<T> implements Serializable{
 	 * @param value The knowledge field value to be wrapped.
 	 */
 	public CorrelationMetadataWrapper(T value, String name){
+		this(value, name, 0);
+	}
+	
+	/**
+	 * Wrap the knowledge field value into the {@link CorrelationMetadataWrapper}.
+	 * The wrapper is created with the timestamp = 0 and operational = true.
+	 * @param value The knowledge field value to be wrapped.
+	 */
+	public CorrelationMetadataWrapper(T value, String name, long time){
 		this.value = value;
 		this.name = name;
-		timestamp = 0;
+		timestamp = time;
 		operational = true;
 	}
 	
@@ -93,6 +102,11 @@ public class CorrelationMetadataWrapper<T> implements Serializable{
 	 */
 	public void malfunction(){
 		operational = false;	
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("(%s:%s:%d:%s)", name, value, timestamp, operational ? "o" : "f");
 	}
 
 }
