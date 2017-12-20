@@ -25,6 +25,6 @@ import java.util.Set;
 public interface Component {
 	public Map<String, Object> getKnowledge();
 	public Set<String> getFaultyKnowledge();
-	public Set<Port> getPorts();
+	public Set<? extends Port> getPorts();
 	public void removePort(Port port);
 }

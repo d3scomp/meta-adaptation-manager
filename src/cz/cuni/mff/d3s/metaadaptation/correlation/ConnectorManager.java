@@ -67,6 +67,6 @@ public interface ConnectorManager {
 		}
 	}
 	
-	public Set<DynamicConnector> getConnectors();
+	public Set<? extends DynamicConnector> getConnectors();
 	public DynamicConnector addConnector(Predicate<Map<String, Object>> filter, MediatedKnowledge mediatedKnowledge);
 }

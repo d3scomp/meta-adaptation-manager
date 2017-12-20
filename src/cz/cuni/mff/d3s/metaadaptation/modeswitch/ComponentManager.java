@@ -22,5 +22,5 @@ import java.util.Set;
  *
  */
 public interface ComponentManager {
-	public Set<Component> getComponents();
+	public Set<? extends Component> getComponents();
 }

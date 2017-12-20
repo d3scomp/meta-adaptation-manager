@@ -23,9 +23,9 @@ import java.util.function.Predicate;
  *
  */
 public interface ModeChart {
-	public Set<Mode> getModes();
+	public Set<? extends Mode> getModes();
 	public Mode getCurrentMode();
-	public Set<Transition> getTransitions();
+	public Set<? extends Transition> getTransitions();
 	public Transition addTransition(Mode from, Mode to, Predicate<Void> guard);
 	public void removeTransition(Transition transition);
 }

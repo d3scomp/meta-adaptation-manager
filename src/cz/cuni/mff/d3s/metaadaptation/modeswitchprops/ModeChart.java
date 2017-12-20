@@ -22,7 +22,7 @@ import java.util.Set;
  *
  */
 public interface ModeChart {
-	public Set<Mode> getModes();
+	public Set<? extends Mode> getModes();
 	public Mode getCurrentMode();
-	public Set<Transition> getTransitions();
+	public Set<? extends Transition> getTransitions();
 }

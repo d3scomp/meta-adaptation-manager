@@ -44,12 +44,12 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	
 	private final ComponentManager componentManager;
 
-	private Map<Transition, Double> utility = null;
+	private Map<? extends Transition, Double> utility = null;
 	
 	private boolean initialized;
 	
 	
-	public NonDeterministicModeSwitchingManager(ComponentManager componentManager, Map<Transition, Double> utility){
+	public NonDeterministicModeSwitchingManager(ComponentManager componentManager, Map<? extends Transition, Double> utility){
 		if(componentManager == null){
 			throw new IllegalArgumentException(String.format(
 					"The %s parameter is null.", "componentManager"));
@@ -183,8 +183,8 @@ public class NonDeterministicModeSwitchingManager implements MAPEAdaptation {
 	}
 	
 	public void printMissingTransitions(ModeChart modeChart){
-		Set<Mode> modes = modeChart.getModes();
-		Set<Transition> transitions = modeChart.getTransitions();
+		Set<? extends Mode> modes = modeChart.getModes();
+		Set<? extends Transition> transitions = modeChart.getTransitions();
 		for(Mode from : modes){
 			for(Mode to : modes){
 				if(from.equals(to)){

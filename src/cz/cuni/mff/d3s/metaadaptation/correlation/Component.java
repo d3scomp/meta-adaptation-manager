@@ -26,6 +26,6 @@ public interface Component {
 
 	public Map<String, Object> getKnowledge();
 	public Set<String> getFaultyKnowledge();
-	public Set<ComponentPort> getPorts();
+	public Set<? extends ComponentPort> getPorts();
 	public ComponentPort addPort(Set<String> exposedKnowledge);
 }
