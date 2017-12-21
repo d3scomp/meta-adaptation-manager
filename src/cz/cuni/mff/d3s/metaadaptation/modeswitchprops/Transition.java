@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public interface Transition {
 	public Mode getFrom();
-	public Mode GetTo();
+	public Mode getTo();
 	public Map<String, Double> getGuardParams();
 	public void setGuardParam(String name, double value);
 }
