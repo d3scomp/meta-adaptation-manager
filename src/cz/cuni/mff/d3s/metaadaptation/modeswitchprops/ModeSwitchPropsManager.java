@@ -125,7 +125,7 @@ public class ModeSwitchPropsManager implements MAPEAdaptation {
 			for(Transition transition : component.getModeChart().getTransitions()){
 				for(String property : transition.getGuardParams().keySet()){
 					for(PropertyValue plannedProperty : plannedProperties){
-						if(property.equals(plannedProperty)){
+						if(property.equals(plannedProperty.property)){
 							transition.setGuardParam(property, plannedProperty.value);
 							if(verbose){
 								System.out.println(String.format(
